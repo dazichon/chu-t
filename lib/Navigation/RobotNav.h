@@ -5,6 +5,7 @@
 #include "PIDController.h"
 #include "RobotConfig.h"
 #include "encoder.h"
+#include "maze_algorithm.h"
 #include <Arduino.h>
 #include <MPU6050.h>
 #include <VL53L0X.h>
@@ -35,7 +36,9 @@ public:
   void stepCell(int numCells = 1);
 
   // 4 Hàm Chuyển Động Nguyên Tử (Atomic Motion - Bước 3)
-  WallStatus moveOneCell();
+  // turn: 'F' thẳng, 'L' trái, 'R' phải, 'B' quay đầu (chỉ để báo cáo bản đồ)
+  WallStatus moveOneCell(char turn = 'F');
+  void reportCell(char act, const WallStatus &w, const WallStatus *pre = nullptr);
   WallStatus turnLeftAndStep();
   WallStatus turnRightAndStep();
   WallStatus turnAroundAndStep();
@@ -46,10 +49,29 @@ public:
   void stopAutoWallFollow();
   void stepAutoWallFollow();
   bool autoWallFollowActive;
+  // Cảm biến hông đặt xiên nên nhìn về PHÍA TRƯỚC ~1 ô: vách hông ô đích được lấy mẫu khi xe
+  // đã chạy được sideSampleFrac (0..1) quãng đường của ô, không đọc lúc đã đứng ở tâm ô.
+  float sideSampleFrac;
+  bool startCellFresh; // xe còn ở ô xuất phát (hướng Bắc, có tường trái/phải/sau), chưa đi ô nào
+  WallStatus preWalls; // vách đọc trước khi bước (cảm biến nhìn trước 1 ô) = vách ô sắp vào
+  WallStatus curWalls; // vách của ô đang đứng (theo hướng xe hiện tại)
+  bool patrolMode;      // true: đi thẳng, gặp tường thì quay đầu
   bool followRightHand; // true: Tay Phải, false: Tay Trái
   int autoCellCount;    // Đếm số ô đã đi
   int autoMaxCells;     // Giới hạn an toàn (mặc định 60 ô)
   String lastAutoDecision;
+
+  // Chế Độ 4: Flood-fill (tự khám phá mê cung bằng thuật toán maze_algorithm.h)
+  // Toạ độ tuyệt đối maze[x][y]: y tăng về Bắc, x tăng về Đông. Hướng: 0=N 1=E 2=S 3=W
+  ParentMaze ffMaze;
+  bool ffActive;
+  uint8_t ffMode; // 0: đi tới đích (goal), 1: khám phá toàn bộ rồi quay về ô xuất phát
+  int8_t ffX, ffY, ffH;
+  Point ffStart, ffGoal;
+  void startFloodFill(uint8_t mode);
+  void stopFloodFill(const char *reason = "ĐÃ DỪNG");
+  void stepFloodFill();
+  void resetFloodFill(int x = 0, int y = 0, int h = 0);
 
   // Encoder helper methods
   long getLeftEncoder() const;

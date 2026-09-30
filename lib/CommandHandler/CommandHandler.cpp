@@ -14,9 +14,24 @@ void CommandHandler::processBLECommands() {
     return;
 
   String cmd = bleManager.readCommand();
+  cmd.trim();
   cmd.toUpperCase();
 
-  if (cmd == "TL" || cmd == "TEST_LEFT") {
+  if (cmd == "0") {
+    // Lệnh nhanh: DỪNG mọi chế độ tự động
+    if (robotNav.ffActive) robotNav.stopFloodFill();
+    robotNav.patrolMode = false;
+    robotNav.stopAutoWallFollow();
+  } else if (cmd == "1") {
+    // Lệnh nhanh: CHẠY ưu tiên rẽ TRÁI (trái -> thẳng -> phải -> quay đầu)
+    robotNav.patrolMode = false;
+    robotNav.followRightHand = false;
+    robotNav.startAutoWallFollow();
+  } else if (cmd == "2") {
+    // Lệnh nhanh: đi thẳng, gặp tường thì quay đầu
+    robotNav.patrolMode = true;
+    robotNav.startAutoWallFollow();
+  } else if (cmd == "TL" || cmd == "TEST_LEFT") {
     robotNav.pidRunActive = false;
     bleManager.println(">> [BLE] LENH: RE TRAI 90 DO");
     robotNav.turnLeft(90.0f);
@@ -93,9 +108,39 @@ void CommandHandler::processBLECommands() {
                               robotNav.gyroPID.getKi(), val * 1.5f);
     bleManager.println(">> [BLE] CAP NHAT PID Kd = " + String(val, 2));
   } else if (cmd == "AUTO_3_ON" || cmd == "AUTO_ON" || cmd == "AUTO_START") {
+    robotNav.patrolMode = false;
     robotNav.startAutoWallFollow();
   } else if (cmd == "AUTO_3_OFF" || cmd == "AUTO_OFF" || cmd == "AUTO_STOP") {
+    if (robotNav.ffActive) robotNav.stopFloodFill();
     robotNav.stopAutoWallFollow();
+  } else if (cmd == "FF_ON" || cmd == "FF_GOAL") {
+    robotNav.startFloodFill(0);
+  } else if (cmd == "FF_EXPLORE") {
+    robotNav.startFloodFill(1);
+  } else if (cmd == "FF_OFF") {
+    robotNav.stopFloodFill();
+  } else if (cmd.startsWith("SET_GOAL=")) {
+    int comma = cmd.indexOf(',');
+    int gx = cmd.substring(9, comma).toInt();
+    int gy = cmd.substring(comma + 1).toInt();
+    if (comma > 0 && gx >= 0 && gx < MAZE_SIZE && gy >= 0 && gy < MAZE_SIZE) {
+      robotNav.ffGoal = {(int8_t)gx, (int8_t)gy};
+      bleManager.println(">> [BLE] DICH FLOOD-FILL = (" + String(gx) + "," + String(gy) + ")");
+    }
+  } else if (cmd.startsWith("SET_POS=")) {
+    // SET_POS=x,y,h -> xoá bản đồ flood-fill, đặt xe tại (x,y) hướng h (0=N 1=E 2=S 3=W)
+    int c1 = cmd.indexOf(',');
+    int c2 = cmd.indexOf(',', c1 + 1);
+    if (c1 > 0 && c2 > c1) {
+      robotNav.resetFloodFill(cmd.substring(8, c1).toInt(),
+                              cmd.substring(c1 + 1, c2).toInt(),
+                              cmd.substring(c2 + 1).toInt());
+      bleManager.println(">> [BLE] DAT LAI XE FLOOD-FILL (" + String(robotNav.ffX) + "," +
+                         String(robotNav.ffY) + ") HUONG " + String(robotNav.ffH));
+    }
+  } else if (cmd == "FF_RESET") {
+    robotNav.resetFloodFill(robotNav.ffStart.x, robotNav.ffStart.y, 0);
+    bleManager.println(">> [BLE] DA XOA BAN DO FLOOD-FILL");
   } else if (cmd == "SET_RULE_R" || cmd == "RULE_R") {
     robotNav.followRightHand = true;
     bleManager.println(">> [BLE] DA CHON QUY TAC BAN TAY PHAI (RIGHT-HAND RULE)");
@@ -145,6 +190,12 @@ void CommandHandler::processBLECommands() {
       bleManager.println(">> [BLE] CAP NHAT WALL_DEADBAND = " +
                          String(robotNav.wallDeadband, 1) + " mm");
     }
+  } else if (cmd.startsWith("SET_SSF=")) {
+    float val = cmd.substring(8).toFloat();
+    if (val >= 0.05f && val <= 0.9f) {
+      robotNav.sideSampleFrac = val;
+      bleManager.println(">> [BLE] CAP NHAT SIDE_SAMPLE_FRAC = " + String(val, 2));
+    }
   } else if (cmd == "RESET_ENC" || cmd == "RST_ENC") {
     robotNav.resetEnc();
     bleManager.println(">> [BLE] DA RESET XUNG ENCODER VE 0");
@@ -166,11 +217,12 @@ void CommandHandler::processBLECommands() {
     robotNav.turnAroundAndStep();
   } else if (cmd == "SENSE") {
     WallStatus ws = robotNav.senseCurrentWalls();
-    String senseMsg = ">> [VÁCH Ô] Trước=" + String(ws.hasFront ? "CÓ" : "TRỐNG") +
+    String senseMsg = ">> [VÁCH Ô PHÍA TRƯỚC] Trước=" + String(ws.hasFront ? "CÓ" : "TRỐNG") +
                       " | Trái=" + String(ws.hasLeft ? "CÓ" : "TRỐNG") +
                       " | Phải=" + String(ws.hasRight ? "CÓ" : "TRỐNG");
     bleManager.println(senseMsg);
     Serial.println(senseMsg);
+    robotNav.reportCell('S', ws);
   } else if (cmd.startsWith("STEP=")) {
     int num = cmd.substring(5).toInt();
     if (num > 0 && num <= 20) {
@@ -208,7 +260,11 @@ void CommandHandler::sendTelemetry() {
         ",\"step\":" + String(robotNav.stepCellActive ? "true" : "false") +
         ",\"sstart\":" + String(robotNav.stepStartPulses) +
         ",\"starg\":" + String(robotNav.stepTargetPulses) +
-        ",\"stravel\":" + String(robotNav.stepTraveledPulses) +
+        ",\"stravel\":" + String(robotNav.stepTraveledPulses) + "}";
+    bleManager.println(jsonMsg);
+    delay(6);
+
+    jsonMsg = String("{\"type\":\"telemetry\"") +
         ",\"lc\":" + String(robotNav.leftCompensation, 1) +
         ",\"rc\":" + String(robotNav.rightCompensation, 1) +
         ",\"spd\":" + String(robotNav.turnSpeed) +
@@ -224,10 +280,19 @@ void CommandHandler::sendTelemetry() {
         ",\"trd\":" + String(robotNav.targetRightDist, 1) +
         ",\"wth\":" + String(robotNav.wallThreshold) +
         ",\"fstop\":" + String(robotNav.frontStopDist) +
+        "}";
+    bleManager.println(jsonMsg);
+    delay(6);
+
+    jsonMsg = String("{\"type\":\"telemetry\"") +
         ",\"auto3\":" + String(robotNav.autoWallFollowActive ? "true" : "false") +
         ",\"acnt\":" + String(robotNav.autoCellCount) +
         ",\"arule\":\"" + String(robotNav.followRightHand ? "R" : "L") + "\"" +
-        ",\"adec\":\"" + robotNav.lastAutoDecision + "\"}";
+        ",\"adec\":\"" + robotNav.lastAutoDecision + "\"" +
+        ",\"ffon\":" + String(robotNav.ffActive ? "true" : "false") +
+        ",\"ffx\":" + String(robotNav.ffX) + ",\"ffy\":" + String(robotNav.ffY) +
+        ",\"ffh\":" + String(robotNav.ffH) +
+        ",\"fgx\":" + String(robotNav.ffGoal.x) + ",\"fgy\":" + String(robotNav.ffGoal.y) + "}";
     bleManager.println(jsonMsg);
   }
 }

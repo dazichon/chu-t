@@ -16,6 +16,7 @@ MPU6050::MPU6050(uint8_t addr) {
     _yaw = 0.0;
     _yawSetpoint = 0.0;
     _lastTime = 0;
+    _stillTime = 0.0;
 }
 
 bool MPU6050::begin() {
@@ -83,8 +84,9 @@ void MPU6050::calibrate(int samples) {
     int16_t ax, ay, az, gx, gy, gz;
     
     // Lưu ý: Khi hiệu chuẩn, robot phải đặt đứng yên hoàn toàn
-    for (int i = 0; i < samples; i++) {
-        if (readRawData(&ax, &ay, &az, &gx, &gy, &gz)) {
+    // Bỏ 30 mẫu đầu cho cảm biến ổn định rồi mới lấy trung bình
+    for (int i = 0; i < samples + 30; i++) {
+        if (readRawData(&ax, &ay, &az, &gx, &gy, &gz) && i >= 30) {
             sumZ += gz;
             validSamples++;
         }
@@ -92,8 +94,15 @@ void MPU6050::calibrate(int samples) {
     }
     
     // Tính toán độ lệch tĩnh (offset) cho trục Z với dải 2000 deg/s (16.4 LSB/(deg/s))
-    if (validSamples > 0) {
+    if (validSamples >= samples / 2) {
         _gyroZOffset = (sumZ / validSamples) / 16.4f;
+    }
+    _stillTime = 0.0;
+    String calMsg = ">> GYRO CALIB: " + String(validSamples) + "/" + String(samples) +
+                    " mau hop le | offset Z = " + String(_gyroZOffset, 3) + " do/s";
+    Serial.println(calMsg);
+    if (bleManager.isConnected()) {
+        bleManager.println(calMsg);
     }
     _roll = 0.0;
     _pitch = 0.0;
@@ -121,10 +130,24 @@ void MPU6050::update() {
 
     // Đổi giá trị thô sang đơn vị độ/giây (deg/s) với hệ số 16.4 (cho dải 2000 deg/s)
     // Cảm biến đặt úp nên đảo chiều quay quanh trục Z.
-    float gyroZRate = -((gz / 16.4f) - _gyroZOffset);
+    float residual = (gz / 16.4f) - _gyroZOffset; // độ/giây sau khi trừ offset lúc calib
 
-    // Lọc nhiễu tĩnh nhỏ (Deadzone) tránh bị trôi góc khi xe đứng yên
-    if (fabsf(gyroZRate) < 0.8f) {
+    // Tự bù trôi (drift): nếu gyro gần như đứng yên liên tục > 0.4s thì offset đang lệch
+    // nhẹ do nhiệt độ -> kéo offset về giá trị đo được rất chậm.
+    if (fabsf(residual) < 1.5f) {
+        _stillTime += dt;
+        if (_stillTime > 0.4f) {
+            _gyroZOffset += residual * 0.02f;
+            residual = (gz / 16.4f) - _gyroZOffset;
+        }
+    } else {
+        _stillTime = 0.0f;
+    }
+
+    float gyroZRate = -residual;
+
+    // Deadzone nhỏ còn lại để triệt nhiễu số
+    if (fabsf(gyroZRate) < 0.15f) {
         gyroZRate = 0.0f;
     }
 

@@ -945,347 +945,262 @@
 
         <!-- NAVIGATION TABS -->
         <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab(1)">🚗 Chế Độ 1: Test Xe (Bám Tường PID)</button>
-            <button class="tab-btn" onclick="switchTab(2)">🏁 Chế Độ 2: Test Đi 1 Ô (Encoder)</button>
-            <button class="tab-btn" onclick="switchTab(3)">🤖 Chế Độ 3: Bám Tường Tự Động (Auto Follower)</button>
-            <button class="tab-btn" onclick="switchTab(4)">🖥️ Terminal Console BLE</button>
+            <button class="tab-btn active" data-tab="1" onclick="switchTab(1)">🚗 Chế Độ 1: Test Xe & Căn Chỉnh</button>
+            <button class="tab-btn" data-tab="2" onclick="switchTab(2)">🏁 Chế Độ 2: Test Đi 1 Ô</button>
+            <button class="tab-btn" data-tab="5" onclick="switchTab(5)">🗺️ Chế Độ 5: Bản Đồ Mê Cung</button>
+            <button class="tab-btn" data-tab="4" onclick="switchTab(4)">🖥️ Terminal</button>
         </div>
 
-        <!-- TAB 1: TEST XE TOÀN DIỆN -->
+        <!-- TAB 1: TEST XE & CĂN CHỈNH -->
         <div class="tab-panel active" id="tab1">
-            <!-- PHẦN 1: GIÁM SÁT REAL-TIME TRỰC QUAN -->
-            <div class="grid-2col" style="margin-bottom: 24px;">
-                <!-- KHỐI 1: CẢM BIẾN TOF & MÔ PHỎNG Ô MÊ CUNG -->
-                <div class="card" style="margin-bottom: 0;">
+            <style>
+                .t1-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-bottom: 24px; }
+                @media (max-width: 900px) { .t1-grid { grid-template-columns: 1fr; } }
+                .t1-grid > .card { margin-bottom: 0; }
+                .t1-section { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted); margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+                .t1-section::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
+                .gauge-wrap { display: flex; align-items: center; justify-content: center; gap: 22px; flex-wrap: wrap; }
+                .gauge-wrap svg { width: 190px; height: 190px; flex: none; }
+                .gauge-num { font-family: monospace; font-size: 40px; font-weight: 800; color: var(--primary-cyan); text-shadow: 0 0 14px rgba(0,242,254,0.35); line-height: 1; }
+                .gauge-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+                .kv-row { display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px dashed rgba(255,255,255,0.06); }
+                .kv-row:last-child { border-bottom: 0; }
+                .wheel-box { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; }
+                .btn-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+                .tune-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+                .auto-tag { font-size: 11px; font-weight: 700; color: var(--success-green); background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); padding: 3px 10px; border-radius: 20px; }
+            </style>
+
+            <!-- HÀNG 1: CẢM BIẾN + GÓC QUAY -->
+            <div class="t1-grid">
+                <div class="card">
                     <div class="card-header">
-                        <div class="card-title">📡 Cảm Biến VL53L0X & Mô Phỏng Ô Mê Cung</div>
-                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Mốc: T:161 | F:110 | R:152</span>
+                        <div class="card-title">📡 Cảm Biến VL53L0X & Ô Mê Cung</div>
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Mốc tâm ô: T:161 · F:110 · P:152</span>
                     </div>
 
-                    <div class="maze-arena-wrapper">
-                        <!-- DOCK TRÁI -->
+                    <div class="maze-arena-wrapper" style="margin: 8px auto 4px;">
                         <div class="sensor-dock">
-                            <div class="dock-badge">TRÁI (LEFT)</div>
-                            <div class="dock-val" id="distLeft">161</div>
+                            <div class="dock-badge">TRÁI</div>
+                            <div class="dock-val" id="distLeft">--</div>
                             <div class="dock-unit">mm</div>
-                            <div class="dock-status" id="statusWallLeft">CÓ TƯỜNG</div>
+                            <div class="dock-status" id="statusWallLeft">--</div>
                         </div>
 
-                        <!-- Ô MAZE Ở GIỮA -->
                         <div class="maze-cell-stage">
-                            <!-- VÁCH TRƯỚC -->
                             <div class="wall-bar wall-top" id="wallTopBar"></div>
-                            <!-- VÁCH TRÁI -->
                             <div class="wall-bar wall-left" id="wallLeftBar"></div>
-                            <!-- VÁCH PHẢI -->
                             <div class="wall-bar wall-right" id="wallRightBar"></div>
 
-                            <!-- DOCK TRƯỚC -->
                             <div class="sensor-dock dock-top">
                                 <span class="dock-badge" style="margin: 0;">TRƯỚC:</span>
-                                <span class="dock-val" id="distFront" style="font-size: 16px;">110</span>
+                                <span class="dock-val" id="distFront" style="font-size: 16px;">--</span>
                                 <span class="dock-unit" style="margin: 0;">mm</span>
-                                <span class="dock-status" id="statusWallFront">CÓ TƯỜNG</span>
+                                <span class="dock-status" id="statusWallFront">--</span>
                             </div>
 
-                            <!-- THÂN ROBOT MICROMOUSE -->
                             <div class="robot-mouse-body" id="mouseBody">
                                 <div style="font-size: 32px; filter: drop-shadow(0 0 8px rgba(0,242,254,0.5));">🐭</div>
-                                <div style="font-size: 11px; font-weight: 800; letter-spacing: 1.5px; color: var(--primary-cyan); margin-top: 4px;">MICROMOUSE</div>
-                                <div class="cell-dev-pill" id="cellDevPill">Lệch tâm: 0.0 mm (Chuẩn tâm)</div>
+                                <div class="cell-dev-pill" id="cellDevPill">Lệch tâm: -- mm</div>
                             </div>
                         </div>
 
-                        <!-- DOCK PHẢI -->
                         <div class="sensor-dock">
-                            <div class="dock-badge">PHẢI (RIGHT)</div>
-                            <div class="dock-val" id="distRight">152</div>
+                            <div class="dock-badge">PHẢI</div>
+                            <div class="dock-val" id="distRight">--</div>
                             <div class="dock-unit">mm</div>
-                            <div class="dock-status" id="statusWallRight">CÓ TƯỜNG</div>
-                        </div>
-                    </div>
-
-                    <!-- 3 BẢNG THÔNG SỐ VẠCH ĐO CHI TIẾT -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px;">
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(0,242,254,0.25); border-radius: 10px; padding: 10px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--primary-cyan);">
-                                <span>⬅️ Trái</span>
-                                <span style="color: var(--text-muted);">&lt; 230mm</span>
-                            </div>
-                            <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-top: 6px;">
-                                <div id="distLeftBar" style="height: 100%; width: 53%; background: linear-gradient(90deg, #0077ff, var(--primary-cyan)); transition: width 0.15s ease;"></div>
-                            </div>
-                        </div>
-
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(0,198,255,0.25); border-radius: 10px; padding: 10px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #00c6ff;">
-                                <span>⬆️ Trước</span>
-                                <span style="color: var(--text-muted);">&le; 100mm</span>
-                            </div>
-                            <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-top: 6px;">
-                                <div id="distFrontBar" style="height: 100%; width: 44%; background: linear-gradient(90deg, #00c6ff, #0072ff); transition: width 0.15s ease;"></div>
-                            </div>
-                        </div>
-
-                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(217,70,239,0.25); border-radius: 10px; padding: 10px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #d946ef;">
-                                <span>➡️ Phải</span>
-                                <span style="color: var(--text-muted);">&lt; 230mm</span>
-                            </div>
-                            <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-top: 6px;">
-                                <div id="distRightBar" style="height: 100%; width: 50%; background: linear-gradient(90deg, #7928ca, #d946ef); transition: width 0.15s ease;"></div>
-                            </div>
+                            <div class="dock-status" id="statusWallRight">--</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- KHỐI 2: ĐỒNG HỒ GÓC YAW & TỐC ĐỘ 2 BÁNH -->
-                <div style="display: flex; flex-direction: column; gap: 20px;">
-                    <!-- LA BÀN YAW -->
-                    <div class="card" style="margin-bottom: 0; padding: 20px;">
-                        <div class="card-header" style="margin-bottom: 12px;">
-                            <div class="card-title">🧭 Đồng Hồ Góc Yaw (MPU6050)</div>
-                            <span style="font-size: 12px; color: var(--text-muted);">Real-time</span>
-                        </div>
-
-                        <div style="display: flex; align-items: center; justify-content: space-around; gap: 16px;">
-                            <div class="compass-outer" style="width: 150px; height: 150px;">
-                                <div class="compass-inner" style="width: 120px; height: 120px;">
-                                    <div class="needle" id="needle" style="height: 55px;"></div>
-                                </div>
-                            </div>
-                            <div style="text-align: center;">
-                                <div class="yaw-value" id="yawVal" style="font-size: 32px;">0.0°</div>
-                                <div class="yaw-label">Góc Yaw Hiện Tại</div>
-                                <div style="display: flex; gap: 8px; margin-top: 12px;">
-                                    <button class="btn-step" style="padding: 8px 12px; font-weight: 600; font-size: 12px; background: rgba(0, 242, 254, 0.15); border: 1px solid var(--primary-cyan); color: #fff; cursor: pointer; border-radius: 8px;" onclick="sendCmd('RESET_YAW')">
-                                        🔄 Reset 0°
-                                    </button>
-                                    <button class="btn-step" style="padding: 8px 12px; font-weight: 600; font-size: 12px; background: rgba(121, 40, 202, 0.25); border: 1px solid var(--primary-purple); color: #fff; cursor: pointer; border-radius: 8px;" onclick="sendCmd('CALIB')">
-                                        ⚖️ Calib Gyro
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- KẾT QUẢ QUAY GẦN NHẤT -->
-                        <div class="result-box" style="margin-top: 14px; padding: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <span style="font-size: 12px; font-weight: 700; color: #fff;">📊 Kết Quả Quay Gần Nhất:</span>
-                                <span id="resStatus" style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Chưa có dữ liệu</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                                <span>Mục tiêu: <b class="val-highlight" id="resTarget">--°</b></span>
-                                <span>Thực tế: <b class="val-highlight" id="resTurned">--°</b></span>
-                                <span>Lệch: <b class="val-error" id="resError">--°</b></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TỐC ĐỘ REAL-TIME 2 BÁNH XE -->
-                    <div class="card" style="margin-bottom: 0; padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <span style="font-weight: 700; font-size: 14px; color: var(--primary-cyan);">⚡ Tốc Độ 2 Bánh (PWM 0-255):</span>
-                            <span id="diffSpeedBadge" style="font-size: 12px; padding: 2px 10px; border-radius: 6px; background: rgba(255,255,255,0.08); color: var(--text-muted); font-weight: 600;">Chênh lệch: 0</span>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(0,242,254,0.25); border-radius: 10px; padding: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                    <span style="font-size: 12px; font-weight: 600; color: #e2e8f0;">🛞 Bánh Trái:</span>
-                                    <span id="valLiveLSpd" style="font-size: 18px; font-weight: 800; color: var(--primary-cyan);">0</span>
-                                </div>
-                                <div style="height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
-                                    <div id="barLiveLSpd" style="height: 100%; width: 0%; background: linear-gradient(90deg, #0077ff, var(--primary-cyan)); transition: width 0.15s ease;"></div>
-                                </div>
-                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
-                                    <span>Xung Enc:</span>
-                                    <span id="valEncL" style="font-family: monospace; font-weight: 700; color: var(--primary-cyan);">0</span>
-                                </div>
-                            </div>
-                            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(121,40,202,0.35); border-radius: 10px; padding: 10px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                    <span style="font-size: 12px; font-weight: 600; color: #e2e8f0;">🛞 Bánh Phải:</span>
-                                    <span id="valLiveRSpd" style="font-size: 18px; font-weight: 800; color: #d946ef;">0</span>
-                                </div>
-                                <div style="height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
-                                    <div id="barLiveRSpd" style="height: 100%; width: 0%; background: linear-gradient(90deg, #7928ca, #d946ef); transition: width 0.15s ease;"></div>
-                                </div>
-                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between;">
-                                    <span>Xung Enc:</span>
-                                    <span id="valEncR" style="font-family: monospace; font-weight: 700; color: #d946ef;">0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PHẦN 2: TRUNG TÂM ĐIỀU KHIỂN THAO TÁC TEST XE (ACTION HUB) -->
-            <div class="card" style="margin-bottom: 24px; padding: 20px;">
-                <div class="card-header" style="margin-bottom: 16px;">
-                    <div class="card-title">🚀 Trung Tâm Thao Tác Test Xe</div>
-                    <span style="font-size: 12px; color: var(--text-muted);">Điều khiển tức thời qua Bluetooth</span>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
-                    <button class="btn-atomic" style="padding: 14px; font-size: 14px; font-weight: 800; background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(0,242,254,0.3)); border: 1px solid var(--success-green); color: #fff;" onclick="switchTab(2)">
-                        🏁 CHUYỂN SANG CHẾ ĐỘ 2: ĐI 1 Ô ➔
-                    </button>
-                    <button class="btn-pid-run" style="padding: 14px;" onclick="sendCmd('PID_ON')">
-                        🚀 KÍCH HOẠT PID BÁM TƯỜNG (CHẠY TỰ DO)
-                    </button>
-                    <button class="btn-brake" style="padding: 14px;" onclick="sendCmd('PID_OFF')">
-                        🛑 DỪNG XE (PID OFF)
-                    </button>
-                    <button class="btn-turn-left" onclick="sendCmd('TL')">
-                        <span>◀</span> QUAY THỬ RẼ TRÁI 90°
-                    </button>
-                    <button class="btn-turn-right" onclick="sendCmd('TR')">
-                        QUAY THỬ RẼ PHẢI 90° <span>▶</span>
-                    </button>
-                    <button class="btn-atomic btn-atomic-sense" style="padding: 12px; font-size: 13px;" onclick="calibrateCenterCurrent()">
-                        📌 Gán Chuẩn Tâm Ô Này
-                    </button>
-                    <button class="btn-atomic btn-atomic-util" style="padding: 12px; font-size: 13px;" onclick="sendCmd('RST_ENC')">
-                        🔄 Reset Xung Encoder
-                    </button>
-                </div>
-            </div>
-
-            <!-- PHẦN 3: BẢNG CĂN CHỈNH THÔNG SỐ LIVE (TUNING PARAMETERS) -->
-            <div class="grid-2col">
-                <!-- CỘT 1: TÂM Ô, TỐC ĐỘ & BÙ QUÁN TÍNH -->
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">🎯 Căn Chỉnh Tâm Ô & Tốc Độ & Bù Rẽ</div>
+                        <div class="card-title">🧭 Góc Quay Yaw (MPU6050)</div>
+                        <span class="map-chip" id="yawAgeChip" style="font-size: 11px;">chưa có dữ liệu</span>
                     </div>
 
-                    <!-- DEADBAND -->
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 200 200" aria-label="Đồng hồ góc yaw">
+                            <defs>
+                                <radialGradient id="dialBg" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#0d1526"/>
+                                    <stop offset="100%" stop-color="#060a14"/>
+                                </radialGradient>
+                                <linearGradient id="carGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#67e8f9"/>
+                                    <stop offset="100%" stop-color="#0ea5e9"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="100" cy="100" r="94" fill="url(#dialBg)" stroke="rgba(0,242,254,0.35)" stroke-width="2"/>
+                            <g id="yawTicks"></g>
+                            <text x="100" y="30" text-anchor="middle" fill="#00f2fe" font-size="13" font-weight="800">0°</text>
+                            <text x="176" y="105" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="700">-90°</text>
+                            <text x="24" y="105" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="700">+90°</text>
+                            <text x="100" y="180" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="700">180°</text>
+                            <g id="yawCar" style="transition: transform 0.12s linear;" transform="rotate(0 100 100)">
+                                <path d="M100 58 L118 122 L100 112 L82 122 Z" fill="url(#carGrad)" stroke="#cffafe" stroke-width="1.5" stroke-linejoin="round"/>
+                            </g>
+                            <circle cx="100" cy="100" r="4" fill="#0b1120" stroke="#67e8f9" stroke-width="1.5"/>
+                        </svg>
+
+                        <div>
+                            <div class="gauge-num" id="yawVal">0.0°</div>
+                            <div class="gauge-sub">Góc Yaw hiện tại (−180° … +180°)</div>
+                            <div class="kv-row" style="margin-top: 10px;"><span>Tích lũy</span><b id="yawTotal" style="font-family: monospace;">0.0°</b></div>
+                            <div class="kv-row"><span>Chiều dương</span><b>Quay trái (ngược kim)</b></div>
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); margin-top: 8px; cursor: pointer;">
+                                <input type="checkbox" id="yawFlipChk" onchange="yawSetFlip(this.checked)"> Đảo chiều kim đồng hồ
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px;">
+                        <button class="btn-atomic btn-atomic-sense" onclick="yawReset()">🔄 Reset về 0°</button>
+                        <button class="btn-atomic btn-atomic-calib" onclick="yawCalib()">⚖️ Calib Gyro (để xe đứng yên)</button>
+                    </div>
+
+                    <div class="result-box" style="margin-top: 14px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #fff;">📊 Kết quả quay gần nhất</span>
+                            <span id="resStatus" style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Chưa có dữ liệu</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                            <span>Mục tiêu: <b class="val-highlight" id="resTarget">--°</b></span>
+                            <span>Thực tế: <b class="val-highlight" id="resTurned">--°</b></span>
+                            <span>Lệch: <b class="val-error" id="resError">--°</b></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HÀNG 2: BÁNH XE + ĐIỀU KHIỂN -->
+            <div class="t1-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">⚡ Tốc Độ 2 Bánh & Encoder</div>
+                        <span id="diffSpeedBadge" style="font-size: 12px; padding: 2px 10px; border-radius: 6px; background: rgba(255,255,255,0.08); color: var(--text-muted); font-weight: 600;">Chênh lệch: 0</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="wheel-box" style="border: 1px solid rgba(0,242,254,0.25);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 12px; font-weight: 600;">🛞 Bánh trái</span>
+                                <span id="valLiveLSpd" style="font-size: 18px; font-weight: 800; color: var(--primary-cyan);">0</span>
+                            </div>
+                            <div style="height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+                                <div id="barLiveLSpd" style="height: 100%; width: 0%; background: linear-gradient(90deg, #0077ff, var(--primary-cyan)); transition: width 0.15s ease;"></div>
+                            </div>
+                            <div class="kv-row" style="margin-top: 8px;"><span>Xung Encoder</span><b id="valEncL" style="font-family: monospace; color: var(--primary-cyan);">0</b></div>
+                        </div>
+                        <div class="wheel-box" style="border: 1px solid rgba(121,40,202,0.35);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 12px; font-weight: 600;">🛞 Bánh phải</span>
+                                <span id="valLiveRSpd" style="font-size: 18px; font-weight: 800; color: #d946ef;">0</span>
+                            </div>
+                            <div style="height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+                                <div id="barLiveRSpd" style="height: 100%; width: 0%; background: linear-gradient(90deg, #7928ca, #d946ef); transition: width 0.15s ease;"></div>
+                            </div>
+                            <div class="kv-row" style="margin-top: 8px;"><span>Xung Encoder</span><b id="valEncR" style="font-family: monospace; color: #d946ef;">0</b></div>
+                        </div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">PWM 0–255. Hai bánh chênh nhiều khi đi thẳng nghĩa là xe đang bẻ lái để về tâm ô.</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><div class="card-title">🚀 Điều Khiển Test Xe</div></div>
+                    <div class="btn-row">
+                        <button class="btn-pid-run" style="grid-column: auto; padding: 14px;" onclick="sendCmd('PID_ON')">🚀 Chạy PID bám tường</button>
+                        <button class="btn-brake" style="grid-column: auto; padding: 14px;" onclick="sendCmd('PID_OFF')">🛑 Dừng xe</button>
+                        <button class="btn-turn-left" onclick="sendCmd('TL')"><span>◀</span> Quay trái 90°</button>
+                        <button class="btn-turn-right" onclick="sendCmd('TR')">Quay phải 90° <span>▶</span></button>
+                        <button class="btn-atomic btn-atomic-sense" style="grid-column: 1 / -1; padding: 12px;" onclick="calibrateCenterCurrent()">📌 Gán chuẩn tâm ô từ vị trí hiện tại</button>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 12px; line-height: 1.6;">
+                        Quy trình gợi ý: đặt xe giữa ô → <b>Calib Gyro</b> → <b>Gán chuẩn tâm</b> → <b>Chạy PID</b> và chỉnh thông số bên dưới (áp dụng ngay khi kéo).
+                    </div>
+                </div>
+            </div>
+
+            <!-- HÀNG 3: THÔNG SỐ (TỰ ÁP DỤNG) -->
+            <div class="t1-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">🎯 Tâm Ô, Tốc Độ & Bù Rẽ</div>
+                        <span class="auto-tag">Tự áp dụng</span>
+                    </div>
+
                     <div class="param-group">
                         <div class="param-header">
-                            <div class="param-title">🛡️ Vùng Chết Khử Nhiễu Tâm (Deadband):</div>
+                            <div class="param-title">🛡️ Vùng chết tâm ô (Deadband)</div>
                             <div class="param-value-badge" id="valBadgeDB">3.0 mm</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('db', -0.5)">-</button>
-                            <input type="range" class="slider-input" id="sliderDB" min="0.0" max="20.0" step="0.5" value="3.0" oninput="updateBadge('DB', this.value)" onchange="applyParam('DB')">
-                            <button class="btn-step" onclick="stepParam('db', 0.5)">+</button>
-                            <button class="btn-apply" onclick="applyParam('DB')">Gửi</button>
-                        </div>
+                        <input type="range" class="slider-input" id="sliderDB" min="0" max="20" step="0.5" value="3" style="width:100%;">
+                        <div class="tune-hint">Sai lệch nhỏ hơn giá trị này thì xe coi như đã ở tâm.</div>
                     </div>
 
-                    <!-- BASE SPEED -->
                     <div class="param-group">
                         <div class="param-header">
-                            <div class="param-title">⚡ Tốc Độ Chạy Thẳng (Base Speed):</div>
+                            <div class="param-title">⚡ Tốc độ chạy thẳng</div>
                             <div class="param-value-badge" id="valBadgeFSPD">75</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('fspd', -5)">-</button>
-                            <input type="range" class="slider-input" id="sliderFSPD" min="40" max="255" step="5" value="75" oninput="updateBadge('FSPD', this.value)" onchange="applyParam('FSPD')">
-                            <button class="btn-step" onclick="stepParam('fspd', 5)">+</button>
-                            <button class="btn-apply" onclick="applyParam('FSPD')">Gửi</button>
-                        </div>
+                        <input type="range" class="slider-input" id="sliderFSPD" min="40" max="255" step="5" value="75" style="width:100%;">
                     </div>
 
-                    <!-- TURN SPEED -->
                     <div class="param-group">
                         <div class="param-header">
-                            <div class="param-title">🔄 Tốc Độ Quay Góc Rẽ (Turn Speed):</div>
+                            <div class="param-title">🔄 Tốc độ quay góc rẽ</div>
                             <div class="param-value-badge" id="valBadgeSPD">70</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('spd', -5)">-</button>
-                            <input type="range" class="slider-input" id="sliderSPD" min="40" max="255" step="5" value="70" oninput="updateBadge('SPD', this.value)" onchange="applyParam('SPD')">
-                            <button class="btn-step" onclick="stepParam('spd', 5)">+</button>
-                            <button class="btn-apply" onclick="applyParam('SPD')">Gửi</button>
-                        </div>
+                        <input type="range" class="slider-input" id="sliderSPD" min="40" max="255" step="5" value="70" style="width:100%;">
                     </div>
 
-                    <!-- LEFT COMPENSATION -->
                     <div class="param-group">
                         <div class="param-header">
-                            <div class="param-title">📐 Bù Rẽ Trái (Left Compensation):</div>
+                            <div class="param-title">📐 Bù rẽ trái</div>
                             <div class="param-value-badge" id="valBadgeLC">22.0°</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('lc', -0.5)">-</button>
-                            <input type="range" class="slider-input" id="sliderLC" min="0" max="50" step="0.5" value="22.0" oninput="updateBadge('LC', this.value)" onchange="applyParam('LC')">
-                            <button class="btn-step" onclick="stepParam('lc', 0.5)">+</button>
-                            <button class="btn-apply" onclick="applyParam('LC')">Gửi</button>
-                        </div>
+                        <input type="range" class="slider-input" id="sliderLC" min="0" max="50" step="0.5" value="22" style="width:100%;">
                     </div>
 
-                    <!-- RIGHT COMPENSATION -->
-                    <div class="param-group">
+                    <div class="param-group" style="margin-bottom: 0;">
                         <div class="param-header">
-                            <div class="param-title">📐 Bù Rẽ Phải (Right Compensation):</div>
+                            <div class="param-title">📐 Bù rẽ phải</div>
                             <div class="param-value-badge" id="valBadgeRC">22.0°</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('rc', -0.5)">-</button>
-                            <input type="range" class="slider-input" id="sliderRC" min="0" max="50" step="0.5" value="22.0" oninput="updateBadge('RC', this.value)" onchange="applyParam('RC')">
-                            <button class="btn-step" onclick="stepParam('rc', 0.5)">+</button>
-                            <button class="btn-apply" onclick="applyParam('RC')">Gửi</button>
-                        </div>
+                        <input type="range" class="slider-input" id="sliderRC" min="0" max="50" step="0.5" value="22" style="width:100%;">
+                        <div class="tune-hint">Bù rẽ = số độ trừ bớt để xe không bị lố góc do quán tính.</div>
                     </div>
                 </div>
 
-                <!-- CỘT 2: BỘ THÔNG SỐ PID BÁM TƯỜNG -->
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">🎛️ Bộ Tham Số PID Bám Tường</div>
+                        <div class="card-title">🎛️ PID Bám Tường</div>
+                        <span class="auto-tag">Tự áp dụng</span>
                     </div>
 
-                    <!-- PID Kp -->
                     <div class="param-group">
                         <div class="param-header">
-                            <div class="param-title">Kp (Hệ Số Tỉ Lệ - Bẻ Lái Nhanh/Chậm):</div>
+                            <div class="param-title">Kp – bẻ lái nhanh/chậm</div>
                             <div class="param-value-badge" id="valBadgeKP">1.00</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('kp', -0.05)">-</button>
-                            <input type="range" class="slider-input" id="sliderKP" min="0.0" max="3.0" step="0.05" value="1.00" oninput="updateBadge('KP', this.value)" onchange="applyParam('KP')">
-                            <button class="btn-step" onclick="stepParam('kp', 0.05)">+</button>
-                            <button class="btn-apply" onclick="applyParam('KP')">Gửi</button>
-                        </div>
+                        <input type="range" class="slider-input" id="sliderKP" min="0" max="3" step="0.05" value="1" style="width:100%;">
                     </div>
 
-                    <!-- PID Ki -->
                     <div class="param-group">
                         <div class="param-header">
-                            <div class="param-title">Ki (Hệ Số Tích Phân):</div>
+                            <div class="param-title">Ki – tích phân</div>
                             <div class="param-value-badge" id="valBadgeKI">0.000</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('ki', -0.001)">-</button>
-                            <input type="range" class="slider-input" id="sliderKI" min="0.000" max="0.050" step="0.001" value="0.000" oninput="updateBadge('KI', this.value)" onchange="applyParam('KI')">
-                            <button class="btn-step" onclick="stepParam('ki', 0.001)">+</button>
-                            <button class="btn-apply" onclick="applyParam('KI')">Gửi</button>
-                        </div>
+                        <input type="range" class="slider-input" id="sliderKI" min="0" max="0.05" step="0.001" value="0" style="width:100%;">
                     </div>
 
-                    <!-- PID Kd -->
-                    <div class="param-group">
+                    <div class="param-group" style="margin-bottom: 0;">
                         <div class="param-header">
-                            <div class="param-title">Kd (Hệ Số Vi Phân - Chống Lắc Lư):</div>
+                            <div class="param-title">Kd – chống lắc lư</div>
                             <div class="param-value-badge" id="valBadgeKD">0.08</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('kd', -0.01)">-</button>
-                            <input type="range" class="slider-input" id="sliderKD" min="0.00" max="2.00" step="0.01" value="0.08" oninput="updateBadge('KD', this.value)" onchange="applyParam('KD')">
-                            <button class="btn-step" onclick="stepParam('kd', 0.01)">+</button>
-                            <button class="btn-apply" onclick="applyParam('KD')">Gửi</button>
-                        </div>
-                    </div>
-
-                    <!-- QUICK INFO BOX -->
-                    <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; margin-top: 18px;">
-                        <div style="font-weight: 700; font-size: 12px; color: var(--primary-cyan); margin-bottom: 4px;">💡 Hướng dẫn nhanh căn chỉnh:</div>
-                        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
-                            • Đặt xe giữa ô, nếu thấy <b>Lệch tâm: 0.0 mm (Chuẩn tâm)</b> thì deadband đã hoạt động tốt.<br>
-                            • Bấm <b>🚀 KÍCH HOẠT PID</b> để xe tự bám tường thẳng.<br>
-                            • Nếu xe bị đảo lắc tay lái, giảm nhẹ Kp hoặc tăng Deadband lên 6-7mm.
-                        </div>
+                        <input type="range" class="slider-input" id="sliderKD" min="0" max="2" step="0.01" value="0.08" style="width:100%;">
+                        <div class="tune-hint">Xe đảo lắc: giảm Kp hoặc tăng Deadband lên 6–7 mm.</div>
                     </div>
                 </div>
             </div>
@@ -1407,19 +1322,10 @@
                             <div class="param-title">Số Xung Cho Đi 1 Ô (180mm):</div>
                             <div class="param-value-badge" id="valBadgePPC" style="font-size: 16px; font-weight: 900; color: var(--success-green); background: rgba(16,185,129,0.2);">4400 xung</div>
                         </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepParam('ppc', -100)">-100</button>
-                            <button class="btn-step" onclick="stepParam('ppc', -20)">-20</button>
-                            <input type="range" class="slider-input" id="sliderPPC" min="500" max="10000" step="20" value="4400" oninput="updateBadge('PPC', this.value)" onchange="applyParam('PPC')">
-                            <button class="btn-step" onclick="stepParam('ppc', 20)">+20</button>
-                            <button class="btn-step" onclick="stepParam('ppc', 100)">+100</button>
-                            <button class="btn-apply" onclick="applyParam('PPC')">LƯU</button>
-                        </div>
+                        <input type="range" class="slider-input" id="sliderPPC" min="500" max="10000" step="20" value="4400" style="width:100%;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                             <span style="font-size: 11px; color: var(--text-muted);">Càng tăng số xung → Xe chạy càng xa</span>
-                            <button class="btn-step" style="width: auto; padding: 4px 10px; font-size: 11px;" onclick="resetDefaultPPC()">
-                                ↺ Về Mặc Định 4400 Xung
-                            </button>
+                            
                         </div>
                     </div>
 
@@ -1430,131 +1336,6 @@
                             • <b>Tiến 1 ô:</b> Chạy bám tường, tự dừng khi chạm tường trước (&le;123mm) hoặc đủ 4400 xung.<br>
                             • <b>Quay & Tiến:</b> Dùng Gyro MPU6050 xoay vuông 90°/180° rồi tự động lao vào ô mới.<br>
                             • <b>Đọc Vách:</b> Báo ngay trạng thái Trước/Trái/Phải của ô hiện tại.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 3: BÁM TƯỜNG TỰ ĐỘNG (AUTONOMOUS WALL FOLLOWER) -->
-        <div class="tab-panel" id="tab3">
-            <!-- HÀNG 1: TRẠNG THÁI TỔNG QUAN & HUD THỜI GIAN THỰC -->
-            <div class="card" style="padding: 24px; margin-bottom: 24px;">
-                <div class="card-header">
-                    <div class="card-title">🤖 Trạng Thái Hoạt Động Chế Độ Tự Động (Chế Độ 3)</div>
-                    <div class="status-badge" id="auto3StatusBadge" style="font-size: 13px; padding: 6px 14px;">
-                        <div class="status-dot"></div>
-                        <span id="auto3StatusText">ĐANG DỪNG</span>
-                    </div>
-                </div>
-
-                <!-- GRID 4 CHỈ SỐ QUAN TRỌNG -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-top: 10px;">
-                    <!-- CARD 1: QUYẾT ĐỊNH HIỆN TẠI -->
-                    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; text-align: center;">
-                        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🎯 Quyết Định Vừa Ra</div>
-                        <div id="auto3DecisionVal" style="font-size: 18px; font-weight: 900; color: var(--primary-cyan); margin: 10px 0; min-height: 28px;">SẴN SÀNG</div>
-                        <div style="font-size: 11px; color: var(--text-muted);" id="auto3DecisionDesc">Đang chờ lệnh kích hoạt</div>
-                    </div>
-
-                    <!-- CARD 2: SỐ Ô ĐÃ ĐI ĐƯỢC -->
-                    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; text-align: center;">
-                        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🏁 Số Ô Vượt Qua</div>
-                        <div id="auto3CellCountVal" style="font-size: 32px; font-weight: 900; color: var(--success-green); margin: 6px 0; line-height: 1;">0</div>
-                        <div style="font-size: 11px; color: var(--text-muted);">ô (x 180mm / ô)</div>
-                    </div>
-
-                    <!-- CARD 3: LUẬT BÁM TƯỜNG ĐANG DÙNG -->
-                    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; text-align: center;">
-                        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🧭 Thuật Toán Bám Vách</div>
-                        <div id="auto3RuleVal" style="font-size: 16px; font-weight: 800; color: #d946ef; margin: 10px 0; min-height: 28px;">👉 Tay Phải (Right)</div>
-                        <div style="font-size: 11px; color: var(--text-muted);" id="auto3RulePriority">Ưu tiên: Phải &rarr; Thẳng &rarr; Trái</div>
-                    </div>
-
-                    <!-- CARD 4: GIỚI HẠN AN TOÀN -->
-                    <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; text-align: center;">
-                        <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">🛡️ Giới Hạn Tối Đa</div>
-                        <div id="auto3MaxCellsVal" style="font-size: 32px; font-weight: 900; color: var(--warning-amber); margin: 6px 0; line-height: 1;">30</div>
-                        <div style="font-size: 11px; color: var(--text-muted);">ô (Tự dừng khi đủ)</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- HÀNG 2: BẢNG ĐIỀU KHIỂN & CÀI ĐẶT THUẬT TOÁN -->
-            <div class="grid-2col" style="margin-bottom: 24px;">
-                <!-- CỘT 1: NÚT KÍCH HOẠT CHẠY TỰ ĐỘNG -->
-                <div class="card" style="padding: 22px;">
-                    <div class="card-header">
-                        <div class="card-title">🚀 Điều Khiển Chạy Tự Động</div>
-                    </div>
-
-                    <!-- NÚT START TO ĐẸP -->
-                    <button class="btn-atomic btn-auto3-start" onclick="startAutoMode()" style="margin-bottom: 14px;">
-                        <span style="font-size: 22px;">🚀</span>
-                        <span>KÍCH HOẠT TỰ ĐỘNG CHẠY MÊ CUNG</span>
-                    </button>
-
-                    <!-- NÚT STOP KHẨN CẤP -->
-                    <button class="btn-atomic btn-atomic-stop" onclick="stopAutoMode()" style="margin-bottom: 16px; padding: 14px; font-size: 15px;">
-                        <span style="font-size: 18px;">🛑</span> DỪNG TỰ ĐỘNG KHẨN CẤP (AUTO_OFF)
-                    </button>
-
-                    <!-- CHỌN QUY TẮC BÀN TAY (RADIO CARDS) -->
-                    <div style="margin-top: 14px;">
-                        <div style="font-size: 13px; font-weight: 700; color: var(--primary-cyan); margin-bottom: 10px;">
-                            🧭 Chọn Quy Tắc Bám Tường:
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div id="cardRuleRight" class="rule-toggle-card active" onclick="selectRule('R')">
-                                <div style="font-size: 20px; margin-bottom: 4px;">👉</div>
-                                <div style="font-weight: 800; font-size: 13px;">Tay Phải (Right-Hand)</div>
-                                <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">Khuyên Dùng Cho Sa Hình Mới</div>
-                            </div>
-                            <div id="cardRuleLeft" class="rule-toggle-card" onclick="selectRule('L')">
-                                <div style="font-size: 20px; margin-bottom: 4px;">👈</div>
-                                <div style="font-weight: 800; font-size: 13px;">Tay Trái (Left-Hand)</div>
-                                <div style="font-size: 11px; opacity: 0.8; margin-top: 4px;">Dành Cho Mê Cung Đảo Chiều</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CỘT 2: THIẾT LẬP AN TOÀN & NGUYÊN LÝ HOẠT ĐỘNG -->
-                <div class="card" style="padding: 22px;">
-                    <div class="card-header">
-                        <div class="card-title">⚙️ Cài Đặt An Toàn Cho Chế Độ Tự Động</div>
-                    </div>
-
-                    <!-- THANH TRƯỢT SỐ Ô TỐI ĐA -->
-                    <div class="param-group">
-                        <div class="param-header">
-                            <div class="param-title">Giới hạn số ô chạy tối đa (để thử nghiệm an toàn):</div>
-                            <div class="param-value-badge" id="valBadgeAutoMax" style="font-size: 16px; font-weight: 900; color: var(--warning-amber); background: rgba(245,158,11,0.2);">30 ô</div>
-                        </div>
-                        <div class="slider-controls">
-                            <button class="btn-step" onclick="stepAutoMax(-10)">-10</button>
-                            <button class="btn-step" onclick="stepAutoMax(-5)">-5</button>
-                            <input type="range" class="slider-input" id="sliderAutoMax" min="5" max="100" step="5" value="30" oninput="updateAutoMaxBadge(this.value)" onchange="applyAutoMax()">
-                            <button class="btn-step" onclick="stepAutoMax(5)">+5</button>
-                            <button class="btn-step" onclick="stepAutoMax(10)">+10</button>
-                            <button class="btn-apply" onclick="applyAutoMax()">LƯU</button>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                            <span style="font-size: 11px; color: var(--text-muted);">Tự dừng khi chạy đủ số ô này (Tránh xe chạy lạc không hồi kết)</span>
-                        </div>
-                    </div>
-
-                    <!-- HƯỚNG DẪN CHI TIẾT -->
-                    <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--card-border); border-radius: 10px; padding: 14px; margin-top: 16px;">
-                        <div style="font-size: 12px; font-weight: 800; color: var(--primary-cyan); margin-bottom: 6px;">
-                            💡 Cơ Chế Tự Động Bám Tường Hoạt Động Thế Nào?
-                        </div>
-                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6;">
-                            1. <b>Xuất phát:</b> Xe bắt đầu ở tâm ô xuất phát (0,0).<br>
-                            2. <b>Mỗi ô:</b> Xe dùng 3 cảm biến ToF quét vách (Trước, Trái, Phải).<br>
-                            3. <b>Ra quyết định:</b> Theo luật bàn tay (vd Tay Phải: nếu bên phải trống &rarr; rẽ phải; nếu kẹt &rarr; đi thẳng; nếu kẹt tiếp &rarr; rẽ trái; nếu ngõ cụt &rarr; quay đầu 180°).<br>
-                            4. <b>Thực thi nguyên tử:</b> Gọi hàm tương ứng ở Chế Độ 2 (đã căn 4400 xung và MPU6050 quay góc 90° chuẩn xác).<br>
-                            5. <b>Bám tường thông minh:</b> Trong quá trình tiến, hệ thống PID bám tường tự động giữ xe ở đúng tâm làn đường!
                         </div>
                     </div>
                 </div>
@@ -1574,6 +1355,207 @@
                 <div class="terminal-input-group">
                     <input type="text" class="terminal-input" id="cmdInput" placeholder="Nhập lệnh (vd: PID_ON, PID_OFF, SET_KP=0.2, SET_DB=5.0, STATUS)..." onkeydown="if(event.key==='Enter') sendCustomCmd()">
                     <button class="btn-apply" style="padding: 10px 20px;" onclick="sendCustomCmd()">GỬI LỆNH</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: BẢN ĐỒ MÊ CUNG -->
+        <div class="tab-panel" id="tab5">
+            <style>
+                .map-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 24px; }
+                @media (max-width: 980px) { .map-layout { grid-template-columns: 1fr; } }
+                .map-stage { background: radial-gradient(circle at 50% 30%, #0e1626 0%, #060a14 80%); border: 1px solid var(--card-border); border-radius: 14px; padding: 10px; overflow: auto; max-height: 82vh; text-align: center; }
+                .map-stage canvas { display: inline-block; max-width: none; }
+                .map-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; background: rgba(0,242,254,0.12); border: 1px solid rgba(0,242,254,0.3); color: var(--primary-cyan); font-family: monospace; }
+                .map-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 11px; color: var(--text-muted); }
+                .map-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -3px; margin-right: 5px; }
+                .map-select { background: rgba(0,0,0,0.4); color: #fff; border: 1px solid var(--card-border); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; outline: none; }
+                .m5-sensor { background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px 8px; text-align: center; transition: border-color .2s, background .2s; }
+                .m5-sensor.wall { border-color: rgba(34,211,238,0.6); background: rgba(34,211,238,0.08); }
+                .m5-sensor.stop { border-color: rgba(239,68,68,0.7); background: rgba(239,68,68,0.1); }
+                .m5-lbl { font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: .5px; }
+                .m5-val { font-size: 26px; font-weight: 800; font-family: monospace; color: var(--primary-cyan); line-height: 1.2; }
+                .m5-unit { font-size: 10px; color: var(--text-muted); }
+                .m5-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin: 8px 0 6px; }
+                .m5-bar div { height: 100%; width: 0; background: linear-gradient(90deg, #0077ff, var(--primary-cyan)); transition: width .15s ease; }
+                .m5-state { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; background: rgba(255,255,255,0.06); color: var(--text-muted); }
+                .dpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+                .dpad .btn-atomic { padding: 14px 6px; font-size: 13px; font-weight: 700; }
+                .dpad .empty { visibility: hidden; }
+            </style>
+            <div class="map-layout">
+                <div class="card" style="margin-bottom: 0;">
+                    <div class="card-header" style="margin-bottom: 14px;">
+                        <div class="card-title">🗺️ Bản Đồ Mê Cung</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                            <span class="map-chip" id="mapPoseText">Ô (0,0) ↑</span>
+                            <span class="map-chip" id="mapSizeText">8 × 8</span>
+                        </div>
+                    </div>
+                    <div class="map-stage"><canvas id="mapCanvas"></canvas></div>
+                    <div class="map-legend">
+                        <span><i style="background:#22d3ee"></i>Tường</span>
+                        <span><i style="background:rgba(16,185,129,0.4)"></i>Ô đã đi</span>
+                        <span><i style="background:#0b1120;border:1px dashed #475569"></i>Chưa biết</span>
+                        <span><i style="background:#d946ef"></i>Xe</span>
+                        <span><i style="background:#f59e0b"></i>Xuất phát</span>
+                    </div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:24px;">
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header" style="margin-bottom: 14px;"><div class="card-title">🎮 Điều Khiển</div></div>
+                        <div class="dpad">
+                            <span class="empty"></span>
+                            <button class="btn-atomic btn-atomic-main" style="padding:14px 6px;font-size:13px;" onclick="sendCmd('STEP_1')">⬆️ Tiến 1 ô</button>
+                            <span class="empty"></span>
+                            <button class="btn-atomic btn-atomic-turn-left" onclick="sendCmd('TL_STEP')">↩️ Trái</button>
+                            <button class="btn-atomic btn-atomic-sense" onclick="sendCmd('SENSE')">👁️ Đọc vách</button>
+                            <button class="btn-atomic btn-atomic-turn-right" onclick="sendCmd('TR_STEP')">Phải ↪️</button>
+                            <span class="empty"></span>
+                            <button class="btn-atomic btn-atomic-turn-around" onclick="sendCmd('TA_STEP')">🔄 Quay đầu</button>
+                            <span class="empty"></span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+                            <button class="btn-atomic btn-atomic-util" onclick="sendCmd('AUTO_ON')">🤖 Tự động</button>
+                            <button class="btn-atomic btn-atomic-stop" onclick="sendCmd('AUTO_OFF'); sendCmd('PID_OFF')">🛑 Dừng</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">Phím tắt: ↑ tiến · ← trái · → phải · ↓ quay đầu · Space đọc vách</div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header" style="margin-bottom: 14px;">
+                            <div class="card-title">📡 Cảm Biến Khoảng Cách</div>
+                            <span class="map-chip" id="m5SensorChip">Real-time</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                            <div class="m5-sensor" id="m5BoxL">
+                                <div class="m5-lbl">⬅️ TRÁI</div>
+                                <div class="m5-val" id="m5DistL">--</div>
+                                <div class="m5-unit">mm</div>
+                                <div class="m5-bar"><div id="m5BarL"></div></div>
+                                <div class="m5-state" id="m5StateL">--</div>
+                            </div>
+                            <div class="m5-sensor" id="m5BoxF">
+                                <div class="m5-lbl">⬆️ TRƯỚC</div>
+                                <div class="m5-val" id="m5DistF">--</div>
+                                <div class="m5-unit">mm</div>
+                                <div class="m5-bar"><div id="m5BarF"></div></div>
+                                <div class="m5-state" id="m5StateF">--</div>
+                            </div>
+                            <div class="m5-sensor" id="m5BoxR">
+                                <div class="m5-lbl">➡️ PHẢI</div>
+                                <div class="m5-val" id="m5DistR">--</div>
+                                <div class="m5-unit">mm</div>
+                                <div class="m5-bar"><div id="m5BarR"></div></div>
+                                <div class="m5-state" id="m5StateR">--</div>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">
+                            Ngưỡng có tường: trái/phải &lt; <b id="m5Wth">230</b> mm · trước &le; <b id="m5Fstop">65</b> mm (+10). Cập nhật liên tục qua telemetry.
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header" style="margin-bottom: 14px;">
+                            <div class="card-title">👉 Luật Rẽ Phải</div>
+                            <span class="map-chip" id="rrStatusChip">DỪNG</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <button class="btn-atomic btn-atomic-turn-right" style="padding:12px;font-size:13px;" onclick="sendCmd('RULE_R'); sendCmd('AUTO_ON')">▶ Chạy luật rẽ phải</button>
+                            <button class="btn-atomic btn-atomic-stop" onclick="sendCmd('AUTO_OFF')">🛑 Dừng</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.6;">
+                            Thứ tự ưu tiên mỗi ô: <b>có đường bên phải → rẽ phải</b>; không thì <b>đi thẳng</b>; không thì <b>rẽ trái</b>; hết đường (ngõ cụt) → <b>quay đầu 180°</b>. Map cập nhật theo từng ô.
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header" style="margin-bottom: 14px;">
+                            <div class="card-title">🧠 Tự Động Flood-fill</div>
+                            <span class="map-chip" id="ffStatusChip">DỪNG</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                            <span class="param-title">Ô đích (x, y):</span>
+                            <input type="number" id="ffGoalX" min="0" max="15" value="7" class="map-select" style="width:64px;" onchange="ffGoalChanged()">
+                            <input type="number" id="ffGoalY" min="0" max="15" value="7" class="map-select" style="width:64px;" onchange="ffGoalChanged()">
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <button class="btn-atomic btn-atomic-main" style="padding:12px;font-size:13px;" onclick="ffStart(0)">🎯 Đi tới đích</button>
+                            <button class="btn-atomic btn-atomic-sense" onclick="ffStart(1)">🔍 Khám phá hết</button>
+                        </div>
+                        <button class="btn-atomic btn-atomic-stop" style="margin-top:10px;" onclick="sendCmd('FF_OFF'); sendCmd('AUTO_OFF')">🛑 Dừng Flood-fill</button>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.5;">
+                            Xe tự đọc vách, tính floodfill và đi từng ô; map cập nhật theo. Cần chọn ô xuất phát <b>góc dưới trái</b> (toạ độ ≥ 0, tối đa 16×16). Bấm chạy sẽ đồng bộ vị trí và hướng hiện tại của xe trên map sang robot.
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header" style="margin-bottom: 14px;"><div class="card-title">⚙️ Kích Thước & Hiển Thị Map</div></div>
+
+                        <div class="param-group">
+                            <div class="param-header">
+                                <div class="param-title">Số cột (ngang):</div>
+                                <div class="param-value-badge" id="mapColsVal">8</div>
+                            </div>
+                            <input type="range" class="slider-input" id="mapColsSlider" min="2" max="32" step="1" value="8" style="width:100%;" oninput="mapSetCfg('cols', this.value)">
+                        </div>
+                        <div class="param-group">
+                            <div class="param-header">
+                                <div class="param-title">Số hàng (dọc):</div>
+                                <div class="param-value-badge" id="mapRowsVal">8</div>
+                            </div>
+                            <input type="range" class="slider-input" id="mapRowsSlider" min="2" max="32" step="1" value="8" style="width:100%;" oninput="mapSetCfg('rows', this.value)">
+                        </div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+                            <button class="btn-step" onclick="mapPreset(4)">4×4</button>
+                            <button class="btn-step" onclick="mapPreset(8)">8×8</button>
+                            <button class="btn-step" onclick="mapPreset(16)">16×16</button>
+                            <button class="btn-step" onclick="mapPreset(32)">32×32</button>
+                        </div>
+                        <div class="param-group">
+                            <div class="param-header">
+                                <div class="param-title">Độ to mỗi ô (zoom):</div>
+                                <div class="param-value-badge" id="mapZoomVal">64 px</div>
+                            </div>
+                            <div class="slider-controls">
+                                <button class="btn-step" onclick="mapSetCfg('zoom', mapState.cfg.zoom - 8)">-</button>
+                                <input type="range" class="slider-input" id="mapZoomSlider" min="16" max="120" step="4" value="64" oninput="mapSetCfg('zoom', this.value)">
+                                <button class="btn-step" onclick="mapSetCfg('zoom', mapState.cfg.zoom + 8)">+</button>
+                                <button class="btn-step" onclick="mapFit()">Vừa khung</button>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+                            <span class="param-title">Vị trí ô xuất phát:</span>
+                            <select class="map-select" id="mapCornerSel" onchange="mapSetCfg('corner', this.value)">
+                                <option value="BL">Góc dưới trái</option>
+                                <option value="BR">Góc dưới phải</option>
+                                <option value="TL">Góc trên trái</option>
+                                <option value="TR">Góc trên phải</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;">
+                            <span class="param-title">Hướng xe ban đầu:</span>
+                            <select class="map-select" id="mapHeadSel" onchange="mapSetHeading(this.value)">
+                                <option value="0">↑ Bắc</option>
+                                <option value="1">→ Đông</option>
+                                <option value="2">↓ Nam</option>
+                                <option value="3">← Tây</option>
+                            </select>
+                        </div>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-main);margin-bottom:14px;cursor:pointer;">
+                            <input type="checkbox" id="mapTrailChk" checked onchange="mapSetCfg('trail', this.checked)"> Hiện đường xe đã đi
+                        </label>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <button class="btn-atomic btn-atomic-util" onclick="mapReset()">🧹 Xóa map</button>
+                            <button class="btn-atomic btn-atomic-util" onclick="mapExport()">💾 Lưu ảnh PNG</button>
+                        </div>
+                        <div style="background:rgba(0,0,0,0.25);border:1px solid var(--card-border);border-radius:10px;padding:12px;margin-top:14px;font-size:12px;color:var(--text-muted);line-height:1.6;">
+                            Đã khám phá: <b id="mapVisited" style="color:var(--primary-cyan)">0</b> ô ·
+                            Gần nhất: <b id="mapLastAct" style="color:var(--primary-cyan)">--</b>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1603,12 +1585,13 @@
         }
 
         function switchTab(idx) {
-            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-                btn.classList.toggle('active', i + 1 === idx);
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.tab) === idx);
             });
-            document.querySelectorAll('.tab-panel').forEach((panel, i) => {
-                panel.classList.toggle('active', i + 1 === idx);
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.toggle('active', panel.id === 'tab' + idx);
             });
+            if (idx === 5 && typeof mapDraw === 'function') setTimeout(mapDraw, 0);
         }
 
         async function toggleConnect() {
@@ -1832,80 +1815,449 @@
             if (txt) txt.textContent = `0 / ${target} xung (0%)`;
         }
 
-        function resetDefaultPPC() {
-            const slider = document.getElementById('sliderPPC');
-            if (slider) slider.value = 4400;
-            updateBadge('PPC', 4400);
-            applyParam('PPC');
-            log(">> [CÀI ĐẶT] Đã đặt lại mốc chuẩn mặc định 4400 xung cho 1 ô (180mm)", 'sys');
+        // ===================== CHẾ ĐỘ 5: BẢN ĐỒ MÊ CUNG =====================
+        // Hướng: 0=Bắc(↑) 1=Đông(→) 2=Nam(↓) 3=Tây(←). Toạ độ tương đối so với ô xuất phát (0,0), y hướng lên.
+        const MAP_KEY = 'mm_maze_map_v2';
+        const DIR_DX = [0, 1, 0, -1];
+        const DIR_DY = [1, 0, -1, 0];
+        const DIR_ARROW = ['↑', '→', '↓', '←'];
+        const MAP_DEFAULT_CFG = { cols: 8, rows: 8, zoom: 64, corner: 'BL', trail: true, gx: 7, gy: 7 };
+
+        // Ô xuất phát (0,0): có tường trái, phải và sau THEO HƯỚNG XE ban đầu h, phía trước để trống
+        function mapStartWalls(h) {
+            const w0 = {};
+            w0[edgeKey(0, 0, (h + 3) % 4)] = 1;
+            w0[edgeKey(0, 0, (h + 1) % 4)] = 1;
+            w0[edgeKey(0, 0, (h + 2) % 4)] = 1;
+            return w0;
         }
 
-        // ================= HÀM ĐIỀU KHIỂN CHẾ ĐỘ 3: TỰ ĐỘNG BÁM TƯỜNG =================
-        function startAutoMode() {
-            sendCmd('AUTO_3_ON');
-            log(">> [CHẾ ĐỘ 3] Kích hoạt chạy bám tường tự động!", "cmd");
+        function mapNewState(h = 0) {
+            const w0 = mapStartWalls(h);
+            return { x: 0, y: 0, h: h, cells: { '0,0': 1 }, walls: w0, trail: [[0, 0]], last: '--', cfg: Object.assign({}, MAP_DEFAULT_CFG) };
         }
-
-        function stopAutoMode() {
-            sendCmd('AUTO_3_OFF');
-            log(">> [CHẾ ĐỘ 3] Đã gửi lệnh dừng bám tường tự động!", "cmd");
-        }
-
-        function selectRule(rule) {
-            if (rule === 'R') {
-                sendCmd('SET_RULE_R');
-                const cardR = document.getElementById('cardRuleRight');
-                const cardL = document.getElementById('cardRuleLeft');
-                if (cardR) cardR.classList.add('active');
-                if (cardL) cardL.classList.remove('active');
-                const ruleVal = document.getElementById('auto3RuleVal');
-                const prio = document.getElementById('auto3RulePriority');
-                if (ruleVal) ruleVal.textContent = "👉 Tay Phải (Right)";
-                if (prio) prio.textContent = "Ưu tiên: Phải → Thẳng → Trái";
-            } else {
-                sendCmd('SET_RULE_L');
-                const cardR = document.getElementById('cardRuleRight');
-                const cardL = document.getElementById('cardRuleLeft');
-                if (cardL) cardL.classList.add('active');
-                if (cardR) cardR.classList.remove('active');
-                const ruleVal = document.getElementById('auto3RuleVal');
-                const prio = document.getElementById('auto3RulePriority');
-                if (ruleVal) ruleVal.textContent = "👈 Tay Trái (Left)";
-                if (prio) prio.textContent = "Ưu tiên: Trái → Thẳng → Phải";
+        let mapState = mapNewState();
+        try {
+            const saved = JSON.parse(localStorage.getItem(MAP_KEY) || 'null');
+            if (saved && saved.cells) {
+                mapState = Object.assign(mapNewState(), saved);
+                mapState.cfg = Object.assign({}, MAP_DEFAULT_CFG, saved.cfg || {});
             }
+        } catch (e) {}
+
+        function mapSave() {
+            try { localStorage.setItem(MAP_KEY, JSON.stringify(mapState)); } catch (e) {}
         }
 
-        function stepAutoMax(delta) {
-            const slider = document.getElementById('sliderAutoMax');
-            if (!slider) return;
-            let val = parseInt(slider.value) + delta;
-            if (val < 5) val = 5;
-            if (val > 100) val = 100;
-            slider.value = val;
-            updateAutoMaxBadge(val);
-            applyAutoMax();
+        // Khoá tường giữa 2 ô: chuẩn hoá theo cạnh để 2 ô kề nhau dùng chung 1 tường
+        function edgeKey(x, y, d) {
+            if (d === 0) return `${x},${y}|${x},${y + 1}`;
+            if (d === 1) return `${x},${y}|${x + 1},${y}`;
+            if (d === 2) return `${x},${y - 1}|${x},${y}`;
+            return `${x - 1},${y}|${x},${y}`;
         }
 
-        function updateAutoMaxBadge(val) {
-            const badge = document.getElementById('valBadgeAutoMax');
-            if (badge) badge.textContent = val + ' ô';
-            const maxValEl = document.getElementById('auto3MaxCellsVal');
-            if (maxValEl) maxValEl.textContent = val;
+        function mapApplyEvent(act, wf, wl, wr, pf, pl, pr) {
+            const labels = { F: 'Tiến thẳng', L: 'Rẽ trái & tiến', R: 'Rẽ phải & tiến', B: 'Quay đầu & tiến', S: 'Đọc vách' };
+            if (act === 'L') mapState.h = (mapState.h + 3) % 4;
+            else if (act === 'R') mapState.h = (mapState.h + 1) % 4;
+            else if (act === 'B') mapState.h = (mapState.h + 2) % 4;
+            if (act !== 'S') {
+                mapState.x += DIR_DX[mapState.h];
+                mapState.y += DIR_DY[mapState.h];
+                mapState.trail.push([mapState.x, mapState.y]);
+                if (mapState.trail.length > 1000) mapState.trail.shift();
+            }
+            const h = mapState.h;
+            mapState.cells[`${mapState.x},${mapState.y}`] = 1;
+            // pf/pl/pr: vách ô vừa bước vào (đọc trước khi đi) - chỉ có khi xe di chuyển
+            if (pf !== undefined) {
+                mapState.walls[edgeKey(mapState.x, mapState.y, h)] = pf ? 1 : 0;
+                mapState.walls[edgeKey(mapState.x, mapState.y, (h + 3) % 4)] = pl ? 1 : 0;
+                mapState.walls[edgeKey(mapState.x, mapState.y, (h + 1) % 4)] = pr ? 1 : 0;
+            }
+            // Cảm biến nhìn trước 1 ô: wf/wl/wr là vách của Ô PHÍA TRƯỚC xe
+            const ax = mapState.x + DIR_DX[h], ay = mapState.y + DIR_DY[h];
+            mapState.walls[edgeKey(ax, ay, h)] = wf ? 1 : 0;
+            mapState.walls[edgeKey(ax, ay, (h + 3) % 4)] = wl ? 1 : 0;
+            mapState.walls[edgeKey(ax, ay, (h + 1) % 4)] = wr ? 1 : 0;
+            mapState.last = labels[act] || act;
+            mapSave();
+            mapDraw();
         }
 
-        function applyAutoMax() {
-            const slider = document.getElementById('sliderAutoMax');
-            if (!slider) return;
-            const val = slider.value;
-            sendCmd(`SET_MAX_CELLS=${val}`);
-            log(`>> [CHẾ ĐỘ 3] Giới hạn số ô tối đa: ${val} ô`, 'sys');
+        function ffGoalChanged() {
+            const gx = parseInt(document.getElementById('ffGoalX').value) || 0;
+            const gy = parseInt(document.getElementById('ffGoalY').value) || 0;
+            mapState.cfg.gx = Math.min(15, Math.max(0, gx));
+            mapState.cfg.gy = Math.min(15, Math.max(0, gy));
+            mapSave();
+            mapDraw();
         }
+
+        function ffStart(mode) {
+            if (mapState.cfg.corner !== 'BL') {
+                alert('Flood-fill dùng toạ độ tuyệt đối của robot: hãy chọn "Góc dưới trái" cho vị trí ô xuất phát.');
+                return;
+            }
+            if (mapState.x < 0 || mapState.y < 0 || mapState.x > 15 || mapState.y > 15) {
+                alert('Vị trí xe nằm ngoài lưới 16×16 của robot. Hãy xóa map và đặt lại xe.');
+                return;
+            }
+            ffGoalChanged();
+            sendCmd(`SET_POS=${mapState.x},${mapState.y},${mapState.h}`);
+            sendCmd(`SET_GOAL=${mapState.cfg.gx},${mapState.cfg.gy}`);
+            if (mode === 1) sendCmd('SET_MAX_CELLS=300');
+            sendCmd(mode === 0 ? 'FF_ON' : 'FF_EXPLORE');
+        }
+
+        function mapReset() {
+            if (!confirm('Xóa toàn bộ map và đặt xe về ô xuất phát?')) return;
+            const cfg = mapState.cfg;
+            const h = mapState.h;
+            mapState = mapNewState(h);
+            mapState.cfg = cfg;
+            mapSave();
+            mapDraw();
+        }
+
+        function mapSetHeading(v) {
+            mapState.h = parseInt(v) % 4;
+            // Xe chưa đi ô nào: đặt lại tường ô xuất phát theo hướng mới
+            if (mapState.x === 0 && mapState.y === 0 && mapState.trail.length <= 1) {
+                for (let d = 0; d < 4; d++) delete mapState.walls[edgeKey(0, 0, d)];
+                Object.assign(mapState.walls, mapStartWalls(mapState.h));
+            }
+            mapSave();
+            mapDraw();
+        }
+
+        function mapSetCfg(key, val) {
+            const c = mapState.cfg;
+            if (key === 'cols' || key === 'rows') c[key] = Math.min(32, Math.max(2, parseInt(val) || 2));
+            else if (key === 'zoom') c.zoom = Math.min(120, Math.max(16, parseInt(val) || 64));
+            else if (key === 'trail') c.trail = !!val;
+            else c[key] = val;
+            mapSave();
+            mapDraw();
+        }
+
+        function mapPreset(n) {
+            mapState.cfg.cols = n;
+            mapState.cfg.rows = n;
+            mapSave();
+            mapDraw();
+            mapFit();
+        }
+
+        // Chọn zoom sao cho cả map vừa khung hiển thị
+        function mapFit() {
+            const stage = document.querySelector('#tab5 .map-stage');
+            const b = mapBounds();
+            const w = (stage && stage.clientWidth ? stage.clientWidth : 560) - 20;
+            const z = Math.floor((w - 40) / (b.maxX - b.minX + 1));
+            mapSetCfg('zoom', Math.min(120, Math.max(16, z)));
+        }
+
+        // Giới hạn hiển thị = lưới cố định (theo góc xuất phát) ∪ mọi ô đã biết/xe
+        function mapBounds() {
+            const c = mapState.cfg;
+            const right = c.corner === 'BR' || c.corner === 'TR';
+            const top = c.corner === 'TL' || c.corner === 'TR';
+            let minX = right ? -(c.cols - 1) : 0;
+            let maxX = right ? 0 : c.cols - 1;
+            let minY = top ? -(c.rows - 1) : 0;
+            let maxY = top ? 0 : c.rows - 1;
+            let overflow = false;
+            const grow = (x, y) => {
+                if (x < minX) { minX = x; overflow = true; }
+                if (x > maxX) { maxX = x; overflow = true; }
+                if (y < minY) { minY = y; overflow = true; }
+                if (y > maxY) { maxY = y; overflow = true; }
+            };
+            Object.keys(mapState.cells).forEach(k => { const [x, y] = k.split(',').map(Number); grow(x, y); });
+            grow(mapState.x, mapState.y);
+            return { minX, maxX, minY, maxY, overflow, fixed: { cols: c.cols, rows: c.rows } };
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        function mapDraw() {
+            const cv = document.getElementById('mapCanvas');
+            if (!cv) return;
+            const c = mapState.cfg;
+            const b = mapBounds();
+            const cols = b.maxX - b.minX + 1;
+            const rows = b.maxY - b.minY + 1;
+
+            // Toàn bộ vẽ theo pixel thiết bị và làm tròn số nguyên -> mọi ô đúng bằng nhau, tường dày đều
+            const dpr = window.devicePixelRatio || 1;
+            const S = Math.max(12, Math.round(c.zoom * dpr));        // cạnh 1 ô (px thiết bị)
+            const pad = Math.round(28 * dpr);
+            const W = cols * S + pad * 2;
+            const H = rows * S + pad * 2;
+            cv.width = W;
+            cv.height = H;
+            cv.style.width = (W / dpr) + 'px';
+            cv.style.height = (H / dpr) + 'px';
+            const ctx = cv.getContext('2d');
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, W, H);
+
+            const px = x => pad + (x - b.minX) * S;   // cạnh trái của ô x
+            const py = y => pad + (b.maxY - y) * S;   // cạnh trên của ô y
+            const wallW = Math.max(2, 2 * Math.round(S / 22));   // độ dày tường, luôn chẵn -> căn giữa đúng đường lưới
+            const gap = Math.max(1, Math.round(S / 32));          // khe giữa các ô (giống nhau mọi ô)
+
+            // Nền ô: cùng kích thước tuyệt đối cho mọi ô; chỉ khác màu (đã đi / chưa biết)
+            for (let x = b.minX; x <= b.maxX; x++) {
+                for (let y = b.minY; y <= b.maxY; y++) {
+                    const visited = mapState.cells[`${x},${y}`];
+                    ctx.fillStyle = visited ? 'rgba(16,185,129,0.22)'
+                        : (((x + y) & 1) ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.05)');
+                    ctx.fillRect(px(x) + gap, py(y) + gap, S - gap * 2, S - gap * 2);
+                }
+            }
+
+            // Nhãn toạ độ
+            ctx.fillStyle = 'rgba(148,163,184,0.75)';
+            ctx.font = `600 ${Math.round(Math.max(9, Math.min(12, S / dpr / 4)) * dpr)}px monospace`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            const stepLbl = S / dpr < 28 ? 2 : 1;
+            for (let x = b.minX; x <= b.maxX; x += stepLbl) ctx.fillText(x, px(x) + S / 2, pad / 2);
+            for (let y = b.minY; y <= b.maxY; y += stepLbl) ctx.fillText(y, pad / 2, py(y) + S / 2);
+
+            // Đường xe đã đi
+            if (c.trail && mapState.trail.length > 1) {
+                ctx.beginPath();
+                mapState.trail.forEach(([x, y], i) => {
+                    const cx = px(x) + S / 2, cy = py(y) + S / 2;
+                    if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+                });
+                ctx.strokeStyle = 'rgba(217,70,239,0.55)';
+                ctx.lineWidth = Math.max(2, Math.round(S / 16));
+                ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
+                ctx.setLineDash([Math.round(S / 8), Math.round(S / 8)]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Viền ngoài lưới cố định
+            ctx.strokeStyle = 'rgba(148,163,184,0.3)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px(b.minX) + 0.5, py(b.maxY) + 0.5, cols * S, rows * S);
+
+            // Đoạn cạnh: trả về [x1,y1,x2,y2] nằm đúng trên đường lưới
+            const edgeSeg = k => {
+                const [a, bb] = k.split('|').map(t => t.split(',').map(Number));
+                if (a[0] === bb[0]) return [px(bb[0]), py(bb[1]) + S, px(bb[0]) + S, py(bb[1]) + S]; // cạnh dưới ô phía trên = cạnh trên ô phía dưới
+                return [px(bb[0]), py(bb[1]), px(bb[0]), py(bb[1]) + S];
+            };
+            const keys = Object.keys(mapState.walls);
+
+            // Cạnh đã biết là trống: chấm mờ
+            ctx.lineWidth = 1;
+            keys.forEach(k => {
+                if (mapState.walls[k] === 1) return;
+                const [x1, y1, x2, y2] = edgeSeg(k);
+                ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+                ctx.strokeStyle = 'rgba(148,163,184,0.28)';
+                ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
+            });
+
+            // Tường: hình chữ nhật đặc, dày đều, dài đúng 1 ô + wallW để nối kín ở góc
+            const h2 = wallW / 2;
+            ctx.shadowColor = 'rgba(34,211,238,0.85)';
+            ctx.shadowBlur = Math.round(8 * dpr);
+            ctx.fillStyle = '#22d3ee';
+            keys.forEach(k => {
+                if (mapState.walls[k] !== 1) return;
+                const [x1, y1, x2, y2] = edgeSeg(k);
+                if (y1 === y2) ctx.fillRect(x1 - h2, y1 - h2, S + wallW, wallW);
+                else ctx.fillRect(x1 - h2, y1 - h2, wallW, S + wallW);
+            });
+            ctx.shadowBlur = 0;
+
+            // Cột góc: cùng kích thước ở mọi giao điểm
+            ctx.fillStyle = 'rgba(148,163,184,0.55)';
+            const post = Math.max(2, wallW - 1);
+            for (let x = b.minX; x <= b.maxX + 1; x++) {
+                for (let y = b.minY; y <= b.maxY + 1; y++) {
+                    ctx.fillRect(px(x) - post / 2, py(y - 1) - post / 2, post, post);
+                }
+            }
+
+            // Ô đích flood-fill
+            if (c.gx !== undefined && c.gx >= b.minX && c.gx <= b.maxX && c.gy >= b.minY && c.gy <= b.maxY) {
+                ctx.strokeStyle = '#facc15';
+                ctx.lineWidth = Math.max(2, Math.round(S / 24));
+                ctx.strokeRect(px(c.gx) + gap * 3, py(c.gy) + gap * 3, S - gap * 6, S - gap * 6);
+                ctx.fillStyle = '#facc15';
+                ctx.font = `800 ${Math.round(S * 0.3)}px sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('★', px(c.gx) + S / 2, py(c.gy) + S / 2);
+            }
+
+            // Ô xuất phát
+            const badge = Math.max(12, Math.round(S * 0.24));
+            ctx.fillStyle = 'rgba(245,158,11,0.95)';
+            ctx.fillRect(px(0) + gap + 4, py(0) + gap + 4, badge, badge);
+            ctx.fillStyle = '#1a1200';
+            ctx.font = `800 ${Math.round(badge * 0.7)}px sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('S', px(0) + gap + 4 + badge / 2, py(0) + gap + 4 + badge / 2 + 1);
+
+            // Xe
+            ctx.save();
+            ctx.translate(px(mapState.x) + S / 2, py(mapState.y) + S / 2);
+            ctx.rotate(mapState.h * Math.PI / 2);
+            const r = S * 0.26;
+            ctx.shadowColor = '#d946ef'; ctx.shadowBlur = Math.round(14 * dpr);
+            ctx.beginPath();
+            ctx.moveTo(0, -r); ctx.lineTo(r * 0.85, r * 0.8); ctx.lineTo(0, r * 0.4); ctx.lineTo(-r * 0.85, r * 0.8); ctx.closePath();
+            const grad = ctx.createLinearGradient(0, -r, 0, r);
+            grad.addColorStop(0, '#f0abfc'); grad.addColorStop(1, '#a21caf');
+            ctx.fillStyle = grad; ctx.fill();
+            ctx.restore();
+
+            // Cập nhật nhãn giao diện
+            const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+            set('mapPoseText', `Ô (${mapState.x},${mapState.y}) ${DIR_ARROW[mapState.h]}`);
+            set('mapSizeText', `${c.cols} × ${c.rows}` + (b.overflow ? ' (mở rộng)' : ''));
+            set('mapVisited', Object.keys(mapState.cells).length);
+            set('mapLastAct', mapState.last);
+            set('mapColsVal', c.cols);
+            set('mapRowsVal', c.rows);
+            set('mapZoomVal', c.zoom + ' px');
+            const val = (id, v) => { const el = document.getElementById(id); if (el && el.value != v) el.value = v; };
+            val('mapColsSlider', c.cols); val('mapRowsSlider', c.rows); val('mapZoomSlider', c.zoom);
+            val('mapCornerSel', c.corner); val('mapHeadSel', mapState.h);
+            const gxEl = document.getElementById('ffGoalX'), gyEl = document.getElementById('ffGoalY');
+            if (gxEl && document.activeElement !== gxEl) gxEl.value = c.gx;
+            if (gyEl && document.activeElement !== gyEl) gyEl.value = c.gy;
+            const chk = document.getElementById('mapTrailChk');
+            if (chk) chk.checked = !!c.trail;
+        }
+
+        function mapExport() {
+            const cv = document.getElementById('mapCanvas');
+            if (!cv) return;
+            const a = document.createElement('a');
+            a.download = 'micromouse-map.png';
+            a.href = cv.toDataURL('image/png');
+            a.click();
+        }
+
+        document.addEventListener('keydown', e => {
+            const panel = document.getElementById('tab5');
+            if (!panel || !panel.classList.contains('active')) return;
+            const t = e.target && e.target.tagName;
+            if (t === 'INPUT' && e.target.type === 'text') return;
+            if (t === 'SELECT') return;
+            const m = { ArrowUp: 'STEP_1', ArrowLeft: 'TL_STEP', ArrowRight: 'TR_STEP', ArrowDown: 'TA_STEP', ' ': 'SENSE' };
+            if (m[e.key]) { e.preventDefault(); sendCmd(m[e.key]); }
+        });
+
+        mapDraw();
+
+        // ===================== GÓC YAW =====================
+        let yawFlip = false;
+        try { yawFlip = localStorage.getItem('mm_yaw_flip') === '1'; } catch (e) {}
+        let lastYawAt = 0;
+
+        function yawNormalize(a) {
+            return ((a + 180) % 360 + 360) % 360 - 180;
+        }
+
+        function setYawGauge(yaw) {
+            lastYawAt = Date.now();
+            const n = yawNormalize(yaw);
+            const num = document.getElementById('yawVal');
+            if (num) num.textContent = `${n.toFixed(1)}°`;
+            const tot = document.getElementById('yawTotal');
+            if (tot) tot.textContent = `${yaw.toFixed(1)}°`;
+            // Yaw dương = quay trái (ngược kim); SVG rotate dương = thuận kim nên đảo dấu
+            const car = document.getElementById('yawCar');
+            if (car) car.setAttribute('transform', `rotate(${yawFlip ? n : -n} 100 100)`);
+            const t2 = document.getElementById('tab2Yaw');
+            if (t2) t2.textContent = `${n.toFixed(1)}°`;
+        }
+
+        function yawSetFlip(v) {
+            yawFlip = !!v;
+            try { localStorage.setItem('mm_yaw_flip', yawFlip ? '1' : '0'); } catch (e) {}
+            const m = /(-?[\d.]+)°/.exec((document.getElementById('yawVal') || {}).textContent || '0');
+            setYawGauge(m ? parseFloat(m[1]) : 0);
+        }
+
+        function yawReset() {
+            sendCmd('RESET_YAW');
+            log('>> Đã gửi RESET_YAW: đưa góc về 0°', 'sys');
+        }
+
+        function yawCalib() {
+            sendCmd('CALIB');
+            log('>> Đang Calib Gyro (~1.5 giây): giữ xe đứng yên hoàn toàn!', 'sys');
+        }
+
+        (function initYawGauge() {
+            const g = document.getElementById('yawTicks');
+            if (g) {
+                let s = '';
+                for (let a = 0; a < 360; a += 10) {
+                    const major = a % 90 === 0;
+                    const len = major ? 12 : (a % 30 === 0 ? 8 : 5);
+                    const rad = a * Math.PI / 180;
+                    const x1 = 100 + Math.sin(rad) * 88, y1 = 100 - Math.cos(rad) * 88;
+                    const x2 = 100 + Math.sin(rad) * (88 - len), y2 = 100 - Math.cos(rad) * (88 - len);
+                    s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${major ? '#00f2fe' : 'rgba(148,163,184,0.55)'}" stroke-width="${major ? 2 : 1}"/>`;
+                }
+                g.innerHTML = s;
+            }
+            const chk = document.getElementById('yawFlipChk');
+            if (chk) chk.checked = yawFlip;
+            setInterval(() => {
+                const chip = document.getElementById('yawAgeChip');
+                if (!chip) return;
+                if (!lastYawAt) { chip.textContent = 'chưa có dữ liệu'; return; }
+                const age = Date.now() - lastYawAt;
+                chip.textContent = age < 1500 ? 'đang cập nhật' : `mất tín hiệu ${(age / 1000).toFixed(0)}s`;
+                chip.style.color = age < 1500 ? '' : 'var(--danger-red)';
+            }, 500);
+        })();
+
+        // ===================== THAM SỐ TỰ ÁP DỤNG =====================
+        // Kéo thanh trượt -> cập nhật số ngay, gửi lệnh xuống xe sau 250 ms không kéo nữa.
+        // Telemetry không được ghi đè thanh trượt đang thao tác.
+        function syncBadge(type, val) {
+            const slider = document.getElementById(`slider${type}`);
+            if (slider && (document.activeElement === slider || Date.now() - (slider._touchedAt || 0) < 2000)) return;
+            updateBadge(type, val);
+        }
+
+        document.querySelectorAll('input.slider-input[id^="slider"]').forEach(sl => {
+            const type = sl.id.slice('slider'.length);
+            let timer = null;
+            sl.addEventListener('input', () => {
+                sl._touchedAt = Date.now();
+                updateBadge(type, sl.value);
+                clearTimeout(timer);
+                timer = setTimeout(() => applyParam(type), 250);
+            });
+        });
 
         function parseJSONPacket(data) {
             if (data.type === "telemetry") {
                 if (data.yaw !== undefined) {
-                    document.getElementById('yawVal').textContent = `${data.yaw.toFixed(1)}°`;
-                    document.getElementById('needle').style.transform = `rotate(${data.yaw}deg)`;
+                    setYawGauge(data.yaw);
                 }
 
                 // Cập nhật cảm biến khoảng cách & mô phỏng ô (Tab 3)
@@ -2020,14 +2372,14 @@
                     }
                 }
 
-                if (data.db !== undefined) updateBadge('DB', data.db);
-                if (data.lc !== undefined) updateBadge('LC', data.lc);
-                if (data.rc !== undefined) updateBadge('RC', data.rc);
-                if (data.spd !== undefined) updateBadge('SPD', data.spd);
+                if (data.db !== undefined) syncBadge('DB', data.db);
+                if (data.lc !== undefined) syncBadge('LC', data.lc);
+                if (data.rc !== undefined) syncBadge('RC', data.rc);
+                if (data.spd !== undefined) syncBadge('SPD', data.spd);
 
-                if (data.kp !== undefined) updateBadge('KP', data.kp);
-                if (data.ki !== undefined) updateBadge('KI', data.ki);
-                if (data.kd !== undefined) updateBadge('KD', data.kd);
+                if (data.kp !== undefined) syncBadge('KP', data.kp);
+                if (data.ki !== undefined) syncBadge('KI', data.ki);
+                if (data.kd !== undefined) syncBadge('KD', data.kd);
 
                 // Cập nhật tốc độ 2 bánh & tốc độ cơ sở (Chế độ 2)
                 if (data.lspd !== undefined && data.rspd !== undefined) {
@@ -2064,17 +2416,13 @@
                     const t2EncR = document.getElementById('tab2EncR');
                     if (t2EncR) t2EncR.textContent = data.er;
                 }
-                if (data.yaw !== undefined) {
-                    const t2Yaw = document.getElementById('tab2Yaw');
-                    if (t2Yaw) t2Yaw.textContent = `${data.yaw.toFixed(1)}°`;
-                }
 
                 if (data.ppc !== undefined) {
-                    updateBadge('PPC', data.ppc);
+                    syncBadge('PPC', data.ppc);
                     const t2Targ = document.getElementById('tab2TargetPulses');
                     if (t2Targ) t2Targ.textContent = data.ppc;
                 }
-                if (data.fspd !== undefined) updateBadge('FSPD', data.fspd);
+                if (data.fspd !== undefined) syncBadge('FSPD', data.fspd);
 
                 // Cập nhật trạng thái và thanh tiến trình chạy 1 ô (Chế độ 2)
                 const isStep = (data.step === true || data.step === "true");
@@ -2131,6 +2479,37 @@
                     }
                 }
 
+                if (data.l !== undefined && data.f !== undefined && data.r !== undefined) {
+                    const wth = data.wth || 230;
+                    const fst = data.fstop || 65;
+                    const upd = (key, dist, isWall, isStop, maxMm) => {
+                        const box = document.getElementById('m5Box' + key);
+                        const v = document.getElementById('m5Dist' + key);
+                        const bar = document.getElementById('m5Bar' + key);
+                        const st = document.getElementById('m5State' + key);
+                        if (!box) return;
+                        v.textContent = dist;
+                        bar.style.width = Math.min(100, Math.max(0, dist / maxMm * 100)) + '%';
+                        box.className = 'm5-sensor' + (isStop ? ' stop' : (isWall ? ' wall' : ''));
+                        st.textContent = isStop ? 'SÁT TƯỜNG' : (isWall ? 'CÓ TƯỜNG' : 'TRỐNG');
+                    };
+                    upd('L', data.l, data.l > 20 && data.l < wth, false, 300);
+                    upd('R', data.r, data.r > 20 && data.r < wth, false, 300);
+                    upd('F', data.f, data.f > 20 && data.f <= fst + 10, data.f > 20 && data.f <= fst, 250);
+                    const w1 = document.getElementById('m5Wth'); if (w1) w1.textContent = wth;
+                    const w2 = document.getElementById('m5Fstop'); if (w2) w2.textContent = fst;
+                }
+
+                if (data.auto3 !== undefined) {
+                    const rr = document.getElementById('rrStatusChip');
+                    if (rr) rr.textContent = (data.auto3 === true || data.auto3 === "true") ? 'ĐANG CHẠY' : 'DỪNG';
+                }
+
+                if (data.ffon !== undefined) {
+                    const chip = document.getElementById('ffStatusChip');
+                    if (chip) chip.textContent = (data.ffon === true || data.ffon === "true") ? 'ĐANG CHẠY' : 'DỪNG';
+                }
+
                 if (data.acnt !== undefined) {
                     const cellCntEl = document.getElementById('auto3CellCountVal');
                     if (cellCntEl) cellCntEl.textContent = data.acnt;
@@ -2181,6 +2560,9 @@
                     }
                 }
             }
+            else if (data.type === "cell") {
+                mapApplyEvent(data.act, data.wf, data.wl, data.wr, data.pf, data.pl, data.pr);
+            }
             else if (data.type === "turn_res") {
                 document.getElementById('resTarget').textContent = `${data.target.toFixed(1)}°`;
                 document.getElementById('resTurned').textContent = `${data.turned.toFixed(2)}°`;
@@ -2209,17 +2591,6 @@
             else badge.textContent = parseFloat(val).toFixed(1) + '°';
 
             slider.value = val;
-        }
-
-        function stepParam(param, delta) {
-            const type = param.toUpperCase();
-            const slider = document.getElementById(`slider${type}`);
-            let val = parseFloat(slider.value) + delta;
-            if (val < parseFloat(slider.min)) val = parseFloat(slider.min);
-            if (val > parseFloat(slider.max)) val = parseFloat(slider.max);
-            slider.value = val;
-            updateBadge(type, val);
-            applyParam(type);
         }
 
         function applyParam(type) {

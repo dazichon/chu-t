@@ -31,6 +31,7 @@ private:
     float _pitch;
     float _yaw;
     float _yawSetpoint;
+    float _stillTime;   // thời gian liên tục gần như đứng yên (s)
     unsigned long _lastTime;
     
     bool readRawData(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
