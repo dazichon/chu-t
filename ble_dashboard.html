@@ -1857,7 +1857,7 @@
             return `${x - 1},${y}|${x},${y}`;
         }
 
-        function mapApplyEvent(act, wf, wl, wr, pf, pl, pr) {
+        function mapApplyEvent(act, wf, wl, wr, pf, pl, pr, wn) {
             const labels = { F: 'Tiến thẳng', L: 'Rẽ trái & tiến', R: 'Rẽ phải & tiến', B: 'Quay đầu & tiến', S: 'Đọc vách' };
             if (act === 'L') mapState.h = (mapState.h + 3) % 4;
             else if (act === 'R') mapState.h = (mapState.h + 1) % 4;
@@ -1870,17 +1870,21 @@
             }
             const h = mapState.h;
             mapState.cells[`${mapState.x},${mapState.y}`] = 1;
-            // pf/pl/pr: vách ô vừa bước vào (đọc trước khi đi) - chỉ có khi xe di chuyển
+            // pl/pr: vách hông ô vừa bước vào (đọc trước khi đi). pf là vách trước của ô cũ -> xe vừa đi qua nên trống
             if (pf !== undefined) {
-                mapState.walls[edgeKey(mapState.x, mapState.y, h)] = pf ? 1 : 0;
+                mapState.walls[edgeKey(mapState.x, mapState.y, (h + 2) % 4)] = 0;
                 mapState.walls[edgeKey(mapState.x, mapState.y, (h + 3) % 4)] = pl ? 1 : 0;
                 mapState.walls[edgeKey(mapState.x, mapState.y, (h + 1) % 4)] = pr ? 1 : 0;
             }
-            // Cảm biến nhìn trước 1 ô: wf/wl/wr là vách của Ô PHÍA TRƯỚC xe
-            const ax = mapState.x + DIR_DX[h], ay = mapState.y + DIR_DY[h];
-            mapState.walls[edgeKey(ax, ay, h)] = wf ? 1 : 0;
-            mapState.walls[edgeKey(ax, ay, (h + 3) % 4)] = wl ? 1 : 0;
-            mapState.walls[edgeKey(ax, ay, (h + 1) % 4)] = wr ? 1 : 0;
+            // wn: tường sát xe -> vách trước của ô hiện tại
+            mapState.walls[edgeKey(mapState.x, mapState.y, h)] = wn ? 1 : 0;
+            // Cảm biến nhìn trước 1 ô: wf/wl/wr là vách của Ô PHÍA TRƯỚC xe (không phải ô hiện tại)
+            if (!wn) {
+                const ax = mapState.x + DIR_DX[h], ay = mapState.y + DIR_DY[h];
+                mapState.walls[edgeKey(ax, ay, h)] = wf ? 1 : 0;
+                mapState.walls[edgeKey(ax, ay, (h + 3) % 4)] = wl ? 1 : 0;
+                mapState.walls[edgeKey(ax, ay, (h + 1) % 4)] = wr ? 1 : 0;
+            }
             mapState.last = labels[act] || act;
             mapSave();
             mapDraw();
@@ -2561,7 +2565,7 @@
                 }
             }
             else if (data.type === "cell") {
-                mapApplyEvent(data.act, data.wf, data.wl, data.wr, data.pf, data.pl, data.pr);
+                mapApplyEvent(data.act, data.wf, data.wl, data.wr, data.pf, data.pl, data.pr, data.wn);
             }
             else if (data.type === "turn_res") {
                 document.getElementById('resTarget').textContent = `${data.target.toFixed(1)}°`;

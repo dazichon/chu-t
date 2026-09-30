@@ -15,6 +15,7 @@ struct WallStatus {
   bool hasFront; // Có tường trước
   bool hasLeft;  // Có tường trái
   bool hasRight; // Có tường phải
+  bool hasFrontNear = false; // Tường sát xe: vách trước của CHÍNH ô hiện tại
 };
 
 class RobotNav {
@@ -110,6 +111,7 @@ public:
   float centerOffset;
   uint16_t wallThreshold;
   uint16_t frontStopDist;
+  uint16_t frontWallDist; // dF <= ngưỡng này (mm) là có tường trước mặt
 
   // Cảm biến & PID
   VL53L0X sensorLeft;

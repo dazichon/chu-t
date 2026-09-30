@@ -28,6 +28,7 @@ RobotNav::RobotNav()
   centerOffset = 25.0f; // 171.0f - 146.0f = 25.0f
   wallThreshold = 230; // Khoảng cách < 230mm là có tường, > 230mm là cửa trống
   frontStopDist = 123; // Phanh dừng khi cách tường trước <= 123mm (tâm ô thực tế là 121mm)
+  frontWallDist = 240; // dF <= 240mm: có tường trước của Ô PHÍA TRƯỚC (vùng 220-240mm)
 
   // Giá trị cảm biến lọc & Vùng chết tâm ô
   smoothDL = 171.0f;
@@ -493,8 +494,10 @@ void RobotNav::update() {
 WallStatus RobotNav::senseCurrentWalls() {
   updateSensors();
   WallStatus walls;
-  // Chỉ dùng đúng cảm biến của Ô HIỆN TẠI: tường trước khi dF <= frontStopDist + 10 (tâm ô ~121mm).
-  walls.hasFront = frontReady && smoothDF > 20.0f && smoothDF <= (float)(frontStopDist + 10);
+  // Tường sát xe (dF <= frontStopDist + 10): vách trước của ô hiện tại
+  walls.hasFrontNear = frontReady && smoothDF > 20.0f && smoothDF <= (float)(frontStopDist + 10);
+  // Tường trước (dF <= frontWallDist): vách trước của Ô PHÍA TRƯỚC
+  walls.hasFront = !walls.hasFrontNear && frontReady && smoothDF > 20.0f && smoothDF <= (float)frontWallDist;
   walls.hasLeft  = (leftReady && smoothDL > 20.0f && smoothDL < (float)wallThreshold);
   walls.hasRight = (rightReady && smoothDR > 20.0f && smoothDR < (float)wallThreshold);
   return walls;
@@ -507,7 +510,8 @@ void RobotNav::reportCell(char act, const WallStatus &w, const WallStatus *pre) 
   String j = "{\"type\":\"cell\",\"act\":\"" + String(act) + "\"" +
              ",\"wf\":" + String(w.hasFront ? 1 : 0) +
              ",\"wl\":" + String(w.hasLeft ? 1 : 0) +
-             ",\"wr\":" + String(w.hasRight ? 1 : 0);
+             ",\"wr\":" + String(w.hasRight ? 1 : 0) +
+             ",\"wn\":" + String(w.hasFrontNear ? 1 : 0);
   if (pre) {
     j += ",\"pf\":" + String(pre->hasFront ? 1 : 0) +
          ",\"pl\":" + String(pre->hasLeft ? 1 : 0) +
@@ -664,7 +668,7 @@ void RobotNav::stepAutoWallFollow() {
 
   // 2. Vách ô hiện tại: hông = mẫu đã lưu khi vào ô, trước = đọc trực tiếp
   WallStatus walls = curWalls;
-  walls.hasFront = senseCurrentWalls().hasFront;
+  walls.hasFront = senseCurrentWalls().hasFrontNear; // chỉ bị chắn khi tường sát xe
 
   // Chế độ đi thẳng: gặp tường trước thì quay đầu, còn lại đi thẳng
   if (patrolMode) {
@@ -742,20 +746,18 @@ static void ffSetWall(ParentMaze &m, int x, int y, int dir, bool wall) {
   *other[(dir + 2) % 4] = wall; // đồng bộ tường với ô kề
 }
 
-static void ffRecordCell(ParentMaze &m, int x, int y, int h, const WallStatus &ws) {
-  ffSetWall(m, x, y, h, ws.hasFront);
-  ffSetWall(m, x, y, (h + 3) % 4, ws.hasLeft);
-  ffSetWall(m, x, y, (h + 1) % 4, ws.hasRight);
-  m.cell(x, y).known = true;
-}
-
-// Cảm biến nhìn trước 1 ô: ws là vách của ô PHÍA TRƯỚC (x,y) theo hướng h (chưa đi qua)
+// Cảm biến nhìn trước 1 ô: ws (trước/trái/phải) là vách của ô PHÍA TRƯỚC (x,y) theo hướng h
 static void ffRecordAhead(ParentMaze &m, int x, int y, int h, const WallStatus &ws) {
   static const int DX[4] = {0, 1, 0, -1};
   static const int DY[4] = {1, 0, -1, 0};
+  ffSetWall(m, x, y, h, ws.hasFrontNear); // vách trước của ô hiện tại
+  if (ws.hasFrontNear) return;            // bị chắn: không nhìn được ô phía trước
   int ax = x + DX[h], ay = y + DY[h];
   if (ax < 0 || ax >= MAZE_SIZE || ay < 0 || ay >= MAZE_SIZE) return;
-  ffRecordCell(m, ax, ay, h, ws);
+  ffSetWall(m, ax, ay, (h + 3) % 4, ws.hasLeft);
+  ffSetWall(m, ax, ay, (h + 1) % 4, ws.hasRight);
+  ffSetWall(m, ax, ay, h, ws.hasFront);
+  m.cell(ax, ay).known = true;
 }
 
 void RobotNav::resetFloodFill(int x, int y, int h) {
@@ -891,7 +893,13 @@ void RobotNav::stepFloodFill() {
   ffX = next.x;
   ffY = next.y;
   // preWalls = vách ô vừa bước vào (đọc trước khi đi); ws = vách ô phía trước mới
-  if (!ffMaze.cell(ffX, ffY).known) ffRecordCell(ffMaze, ffX, ffY, ffH, preWalls);
+  // preWalls.hasFront là vách trước của ô cũ (đã đi qua -> trống), chỉ dùng vách hông
+  ffSetWall(ffMaze, ffX, ffY, (ffH + 2) % 4, false);
+  if (!ffMaze.cell(ffX, ffY).known) {
+    ffSetWall(ffMaze, ffX, ffY, (ffH + 3) % 4, preWalls.hasLeft);
+    ffSetWall(ffMaze, ffX, ffY, (ffH + 1) % 4, preWalls.hasRight);
+    ffMaze.cell(ffX, ffY).known = true;
+  }
   ffMaze.cell(ffX, ffY).run_visited = true;
   ffRecordAhead(ffMaze, ffX, ffY, ffH, ws);
   autoCellCount++;
